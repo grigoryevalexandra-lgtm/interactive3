@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            /* Точные координаты для вписывания видео в ipadnew2.png */
+            --v-top: 5.6%;    
+            --v-left: 4.7%;   
+            --v-width: 90.6%; 
+            --v-height: 88.8%;
+            --v-round: 20px;
+            --gold: #D4AF37;
+            /* ГРАФИТОВЫЙ ЦВЕТ */
+            --graphite: #383838; 
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+
+        .video-player-root {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16 / 9;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ipad-container {
+            position: relative;
+            width: 88%; 
+            aspect-ratio: 1.77;
+        }
+
+        /* Экран с видео */
+        .screen {
+            position: absolute;
+            top: var(--v-top);
+            left: var(--v-left);
+            width: var(--v-width);
+            height: var(--v-height);
+            z-index: 1;
+            overflow: hidden;
+            border-radius: var(--v-round);
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Рамка айпада лежит сверху */
+        .ipad-frame {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Большая кнопка Play по центру */
+        .big-play {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            width: 80px; height: 80px;
+            background: rgba(212, 175, 55, 0.9);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s;
+        }
+        .playing .big-play { opacity: 0; pointer-events: none; }
+
+        /* ВНУТРЕННЯЯ панель управления */
+        .inner-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.6); /* Полупрозрачная подложка */
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 12px;
+            z-index: 15;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+
+        /* Показываем панель при наведении на экран */
+        .screen:hover .inner-controls {
+            transform: translateY(0);
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            /* КНОПКИ ГРАФИТОВОГО ЦВЕТА */
+            fill: var(--graphite); 
+        }
+
+        .progress-box {
+            flex-grow: 1;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-line {
+            height: 100%;
+            width: 0%;
+            /* ПОЛОСА ГРАФИТОВОГО ЦВЕТА */
+            background: var(--graphite); 
+            border-radius: 3px;
+        }
+
+        .time-info { 
+            color: var(--graphite); 
+            font-family: monospace; 
+            font-size: 12px; 
+            min-width: 80px; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="video-player-root" id="player">
+    <div class="ipad-container">
+        <div class="screen" id="screenArea">
+            <video id="v" playsinline>
+                <source src="https://github.com/grigoryevalexandra-lgtm/interactive3/raw/refs/heads/main/compressed.mp4" type="video/mp4">
+            </video>
+
+            <div class="inner-controls">
+                <button class="control-btn" id="playPauseToggle">
+                    <svg id="p-play" width="24" height="24" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="p-pause" width="24" height="24" viewBox="0 0 24 24" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                
+                <div class="progress-box" id="pBox">
+                    <div class="progress-line" id="pLine"></div>
+                </div>
+                
+                <div class="time-info" id="timer">0:00 / 0:00</div>
+            </div>
+        </div>
+
+        <img src="ipadnew2.png" class="ipad-frame">
+
+        <div class="big-play" id="playBtn">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('v');
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('playBtn');
+    const toggleBtn = document.getElementById('playPauseToggle');
+    const pPlay = document.getElementById('p-play');
+    const pPause = document.getElementById('p-pause');
+    const pLine = document.getElementById('pLine');
+    const timer = document.getElementById('timer');
+    const pBox = document.getElementById('pBox');
+
+    function toggle() {
+        if (video.paused) { 
+            video.play(); 
+            player.classList.add('playing');
+            pPlay.style.display = 'none';
+            pPause.style.display = 'block';
+        } else { 
+            video.pause(); 
+            player.classList.remove('playing');
+            pPlay.style.display = 'block';
+            pPause.style.display = 'none';
+        }
+    }
+
+    playBtn.onclick = toggle;
+    toggleBtn.onclick = toggle;
+    video.onclick = toggle;
+
+    video.ontimeupdate = () => {
+        const pct = (video.currentTime / video.duration) * 100;
+        pLine.style.width = pct + '%';
+        timer.textContent = `${fmt(video.currentTime)} / ${fmt(video.duration)}`;
+    };
+
+    pBox.onclick = (e) => {
+        const rect = pBox.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        video.currentTime = pos * video.duration;
+    };
+
+    function fmt(s) {
+        if (isNaN(s)) return "0:00";
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return `${m}:${sec < 10 ? '0' + sec : sec}`;
+    }
+</script>
+
+</body>
+</html>
