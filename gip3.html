@@ -13,7 +13,7 @@
 
         body {
             background-color: #fff3eb;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Times New Roman, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             color: #1a1a1a;
             display: block;
             min-height: 100vh;
@@ -157,41 +157,36 @@
             border: 1px solid #cbd5e1;
             border-radius: 12px;
             padding: 14px;
-            margin-top: 10px;
+            margin-top: 12px;
             width: 100%;
-        }
-
-        .checker-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .checker-textarea {
             width: 100%;
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 8px;
-            padding: 10px;
+            padding: 12px;
             font-size: 14px;
             color: #334155;
             line-height: 1.4;
             font-family: inherit;
             resize: none;
             margin-bottom: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .checker-textarea:focus {
+            border-color: #2b7de9;
+            box-shadow: 0 0 0 2px rgba(43, 125, 233, 0.1);
         }
 
         .checker-btn {
             background: #2b7de9;
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 12px 16px;
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
@@ -209,17 +204,48 @@
             cursor: not-allowed;
         }
 
+        /* Контейнер результатов ИИ-анализа */
         .checker-result {
-            margin-top: 12px;
-            padding: 12px;
-            background: #e0f2fe;
-            border-left: 4px solid #0284c7;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #0369a1;
-            line-height: 1.5;
+            margin-top: 14px;
             display: none;
             animation: fadeIn 0.3s ease-in-out forwards;
+        }
+
+        /* КРАСНЫЕ ПЛАШКИ ДЛЯ РИСКОВ */
+        .risk-item-card {
+            background: #fff5f5;
+            border: 1px solid #ffe3e3;
+            border-left: 4px solid #fa5252;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #2b2b2b;
+            line-height: 1.4;
+        }
+
+        /* МИГАЮЩИЙ ИНДИКАТОР ВНИМАНИЯ */
+        .attention-blink-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #ffe3e3;
+            border: 1px solid #ffa8a8;
+            color: #e03131;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            gap: 6px;
+            animation: warningPulse 1.2s infinite ease-in-out;
+        }
+
+        @keyframes warningPulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.98); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         @keyframes fadeIn {
@@ -515,23 +541,22 @@
         tooltipHint.classList.remove('show');
     }
 
-    // Пошаговый сценарий диалога
     function runDialogueStep() {
         if (currentState === 0) {
             showTypingIndicator();
             setTimeout(() => {
                 removeTypingIndicator();
-                appendMessage('teacher', `<p>Правки в договорах съедают недели. ИИ не заменит юриста, но на 80% ускорит проверку типовых пунктов, найдет риски и предложит формулировки. Ваша задача - не бояться, а контролировать.</p>`);
+                appendMessage('teacher', `<p>Правки в договорах съедают недели. ИИ не заменит юриста, но на 80% ускорит проверку типовых пунктов, найдет риски и предложит формулировки. Ваша задача — не бояться, а контролировать.</p>`);
                 
                 currentState = 1;
                 setTimeout(() => {
-                    prepareNextStudentAction("Что важно проверить в первую очередь?");
+                    prepareNextStudentAction("Понятно. А что важно проверить в первую очередь?");
                 }, 800);
             }, 1500);
         } 
         else if (currentState === 1) {
             resetInputArea();
-            appendMessage('student', 'Что важно проверить в первую очередь?');
+            appendMessage('student', 'Понятно. А что важно проверить в первую очередь?');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
@@ -544,7 +569,7 @@
                         <li><strong>Штрафные санкции.</strong> Односторонние удержания, несоразмерные неустойки</li>
                         <li><strong>Сроки.</strong> Размытые формулировки «в разумный срок», отсутствие механизма продления</li>
                         <li><strong>Порядок приемки.</strong> Право заказчика отказать без мотивировки, отсутствие сроков согласования</li>
-                        <li><strong>Форс-мажоры.</strong> Узкий перечень обстоятельств, исключающих ответственность</li>
+                        <li><strong>Форс-мажоры.</strong> Узкий перечень обстоятельства, исключающих ответственность</li>
                     </ul>
                 `;
                 appendMessage('teacher', checklistContent);
@@ -592,13 +617,13 @@
                 
                 currentState = 4;
                 setTimeout(() => {
-                    prepareNextStudentAction("Давайте проверим как это будет выглядеть на практике.");
+                    prepareNextStudentAction("Можно посмотреть, как это будет выглядеть на практике?");
                 }, 1500);
             }, 1500);
         }
         else if (currentState === 4) {
             resetInputArea();
-            appendMessage('student', 'Давайте проверим как это будет выглядеть на практике.');
+            appendMessage('student', 'Можно посмотреть, как это будет выглядеть на практике?');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
@@ -606,15 +631,21 @@
                 removeTypingIndicator();
                 
                 const checkerContent = `
-                    <p>Вставьте в окошко для проверки этот пункт из договора.</p>
+                    <p>Выделите и скопируйте пункт договора ниже, затем вставьте его в текстовое поле:</p>
+                    <p style="margin: 8px 0; padding: 12px; background: #f1f5f9; border-radius: 10px; border: 1px dashed #cbd5e1; font-weight: 500; font-style: italic; user-select: all;" title="Нажмите дважды, чтобы выделить всё">8.3. При нарушении сроков Генподрядчик уплачивает пени 0,3% от стоимости этапа за каждый день просрочки. Если просрочка менее 30 дней, заказчик может расторгнуть договор в одностороннем порядке и потребовать возврат аванса за 5 рабочих дней.</p>
+                    
                     <div class="contract-checker-box">
-                        <div class="checker-title">🔍 Модуль ИИ-анализа текста</div>
-                        <textarea class="checker-textarea" rows="4" readonly>8.3. При нарушении сроков Генподрядчик уплачивает пени 0,3% от стоимости этапа за каждый день просрочки. Если просрочка менее 30 дней, заказчик может расторгнуть договор в одностороннем порядке и потребовать возврат аванса за 5 рабочих дней.</textarea>
-                        <button class="checker-btn" id="runCheckBtn" onclick="triggerContractCheck()">Проверить пункт договора</button>
+                        <textarea class="checker-textarea" id="contractInput" rows="4" placeholder="Вставьте скопированный пункт договора сюда..."></textarea>
+                        <button class="checker-btn" id="runCheckBtn" onclick="triggerContractCheck()">Проверить</button>
+                        
                         <div class="checker-result" id="checkerResult">
-                            <strong>Риски в пункте договора:</strong><br>
-                            • Неустойка 0,3% в день - это 109% годовых, очень высокая. Снизить до 0,1%.<br><br>
-                            • Возврат аванса за 5 дней – риск того, что деньги не успеют дойти. Увеличить до 15 дней.
+                            <div class="attention-blink-tag">⚠️ Риски</div>
+                            <div class="risk-item-card">
+                                <strong>Неустойка:</strong> Пени 0,3% в день — это 109% годовых, крайне высокая ставка. Рекомендуется снизить до 0,1%.
+                            </div>
+                            <div class="risk-item-card">
+                                <strong>Возврат аванса:</strong> Срок возврата аванса за 5 дней несет риск того, что деньги не успеют дойти по банку. Рекомендуется увеличить до 15 дней.
+                            </div>
                         </div>
                     </div>
                 `;
@@ -624,7 +655,7 @@
         }
         else if (currentState === 6) {
             resetInputArea();
-            appendMessage('student', 'Отлично, подсвечиваются сразу все спорные моменты. Давай закрепим материал');
+            appendMessage('student', 'Отлично, подсвечиваются сразу все спорные моменты.');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
@@ -632,7 +663,7 @@
                 removeTypingIndicator();
                 
                 const quizContent = `
-                    <p>Вы загрузили в нейросеть очередной пункт договора подряда. Нейросеть снова предложила три варианта анализа. Один из них точен, а два других содержат галлюцинации или упускают важные детали. Найдите правильный.</p>
+                    <p>Теперь давайте закрепим материал урока. Представьте, вы загрузили в нейросеть очередной пункт договора подряда. Нейросеть снова предложила три варианта анализа. Один из них точен, а два других содержат галлюцинации или упускают важные детали. Найдите правильный.</p>
                     
                     <p style="margin: 12px 0; font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-style: italic; color: #475569;">
                         <strong>7.5.</strong> Генподрядчик обязан устранять недостатки, выявленные при приемке работ, в течение 3 рабочих дней с момента получения уведомления. При нарушении этого срока Заказчик вправе привлечь третьих лиц для исправления недостатков за счет Генподрядчика без дополнительного согласования и удержать понесенные расходы из любых сумм, причитающихся Генподрядчику.
@@ -641,17 +672,17 @@
                     <div class="quiz-container">
                         <button class="quiz-btn" id="qBtn1" onclick="checkQuizAnswer(1)">
                             <strong>Ответ № 1</strong>
-                            Срок устранения недостатков в 3 рабочих дня - крайне сжатый, предлагаю увеличить до 7. Заказчик может привлечь третьих лиц без согласия - это риск неконтролируемых расходов, следует ограничить право согласованием сметы. Удержание из любых сумм - опасно, может привести к кассовому разрыву. Кроме того, не указан порядок уведомления Генподрядчика - нужно добавить пункт о направлении уведомления заказным письмом.
+                            Срок устранения недостатков в 3 рабочих дня — крайне сжатый, предлагаю увеличить до 7. Заказчик может привлечь третьих лиц без согласия - это риск неконтролируемых расходов, следует ограничить право согласованием сметы. Удержание из любых сумм - опасно, может привести к кассовому разрыву. Кроме того, не указан порядок уведомления Генподрядчика - нужно добавить пункт о направлении уведомления заказным письмом.
                         </button>
                         
                         <button class="quiz-btn" id="qBtn2" onclick="checkQuizAnswer(2)">
                             <strong>Ответ № 2</strong>
-                            Срок 3 дня - короткий, особенно для сложных дефектов, предложить градацию сроков в зависимости от вида недостатков. Привлечение третьих лиц без согласования несет высокий риск завышения стоимости, рекомендую включить механизм предварительного согласования сметы с Генподрядчиком. Удержание из любых сумм критично, предлагаю ограничить удержание суммами гарантийного депозита.
+                            Срок 3 дня — короткий, особенно для сложных дефектов, предложить градацию сроков в зависимости от вида недостатков. Привлечение третьих лиц без согласования несет высокий риск завышения стоимости, рекомендую включить механизм предварительного согласования сметы с Генподрядчиком. Удержание из любых сумм критично, предлагаю ограничить удержание суммами гарантийного депозита.
                         </button>
                         
                         <button class="quiz-btn" id="qBtn3" onclick="checkQuizAnswer(3)">
                             <strong>Ответ № 3</strong>
-                            Срок 3 дня сильно сжатый, но в рамках рыночной практики, тем не менее рекомендую увеличить до 5 дней. Привлечение третьих лиц без согласования - это существенный риск, необходимо добавить право Генподрядчика предварительно согласовать кандидатуру и стоимость. Удержание из любых сумм - очень широкое полномочие, предлагаю заменить на удержание из сумм, причитающихся за данный этап работ. Пункт не содержит условий о передаче давальческих материалов Генподрядчику - это серьезный пробел, рекомендуется дополнить договор соответствующим разделом.
+                            Срок 3 дня — сильно сжатый, но в рамках рыночной практики, тем не менее рекомендую увеличить до 5 дней. Привлечение третьих лиц без согласования - это существенный риск, необходимо добавить право Генподрядчика предварительно согласовать кандидатуру и стоимость. Удержание из любых сумм - очень широкое полномочие, предлагаю заменить на удержание из сумм, причитающихся за данный этап работ. Пункт не содержит условий о передаче давальческих материалов Генподрядчику - это серьезный пробел, рекомендуется дополнить договор соответствующим разделом.
                         </button>
                     </div>
                 `;
@@ -661,26 +692,31 @@
         }
     }
 
-    // Действие при клике на "Проверить" в окошке договора
     function triggerContractCheck() {
+        const textValue = document.getElementById('contractInput').value.trim();
+        
+        if (textValue.length < 10) {
+            alert("Пожалуйста, сначала скопируйте пункт договора и вставьте его в окошко проверки.");
+            return;
+        }
+
         const resultBox = document.getElementById('checkerResult');
         const checkBtn = document.getElementById('runCheckBtn');
+        const inputArea = document.getElementById('contractInput');
         
+        inputArea.setAttribute('disabled', 'true');
         checkBtn.setAttribute('disabled', 'true');
         checkBtn.innerText = "Анализ завершен";
         resultBox.style.display = "block";
         scrollToBottom();
 
-        // Открываем шаг квиза
         currentState = 6;
         setTimeout(() => {
-            prepareNextStudentAction("Отлично, подсвечиваются сразу все спорные моменты. Давай закрепим материал");
+            prepareNextStudentAction("Отлично, подсвечиваются сразу все спорные моменты.");
         }, 1500);
     }
 
-    // Логика ответов теста
     function checkQuizAnswer(selectedOption) {
-        // Блокируем кнопки после выбора
         document.getElementById('qBtn1').setAttribute('disabled', 'true');
         document.getElementById('qBtn2').setAttribute('disabled', 'true');
         document.getElementById('qBtn3').setAttribute('disabled', 'true');
@@ -700,7 +736,7 @@
                     <p><strong>Верно!</strong> Вы выбрали точный и полный анализ без галлюцинаций.</p>
                     <ul>
                         <li>Все три риска выявлены корректно на основе текста пункта.</li>
-                        <li>Предложены реальные меры - градация сроков, согласование сметы, ограничение удержаний гарантийным депозитом.</li>
+                        <li>Предложены реальные меры — градация сроков, согласование сметы, ограничение удержаний гарантийным депозитом.</li>
                         <li>Нет требований, отсутствующих в исходном тексте.</li>
                     </ul>
                 `;
@@ -709,7 +745,7 @@
         } 
         else if (selectedOption === 1) {
             btn1.classList.add('wrong');
-            btn2.classList.add('correct'); // Подсветим верный для наглядности
+            btn2.classList.add('correct');
             
             setTimeout(() => { showTypingIndicator(); }, 600);
             setTimeout(() => {
@@ -718,7 +754,7 @@
                 const failText1 = `
                     <p><strong>Неверно.</strong> Этот ответ содержит ошибки или галлюцинации.</p>
                     <ul>
-                        <li>Добавлено требование «уведомление заказным письмом» - в исходном пункте нет ничего о способе уведомления, это галлюцинация.</li>
+                        <li>Добавлено требование «уведомление заказным письмом» — в исходном пункте нет ничего о способе уведомления, это галлюцинация.</li>
                         <li>Кроме того, анализ упускает возможность градации сроков в зависимости от сложности недостатков.</li>
                     </ul>
                 `;
