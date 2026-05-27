@@ -13,7 +13,7 @@
 
         body {
             background-color: #fff3eb;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Times New Roman, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             color: #1a1a1a;
             display: block;
             min-height: 100vh;
@@ -81,6 +81,7 @@
             display: flex;
             gap: 10px;
             max-width: 85%;
+            align-items: flex-start;
             animation: messageAppear 0.4s ease-out forwards;
         }
 
@@ -99,16 +100,36 @@
             max-width: 85%;
         }
 
-        /* Контейнер для аватара-заглушки */
+        /* БАЗОВЫЙ КЛАСС АВАТАРОК */
         .avatar {
-            width: 40px;
-            height: 40px;
             border-radius: 50%;
             flex-shrink: 0;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+        }
+
+        /* АВАТАРКА ИИВАНЫЧА (УЧИТЕЛЬ) */
+        .avatar.teacher-avatar {
+            width: 54px;
+            height: 54px;
+            border: 2px solid #ffffff;
+            background-color: #2b7de9;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .avatar.teacher-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center bottom;
+        }
+
+        /* АВАТАРКА УЧЕНИКА (ОСТАЕТСЯ ПРЕЖНЕЙ) */
+        .avatar.student-avatar {
+            width: 40px;
+            height: 40px;
         }
 
         /* Базовая стилизация баблов сообщений */
@@ -382,7 +403,7 @@
 
     <div class="chat-container">
         <div class="chat-header">
-            <div class="avatar" id="headerAvatar"></div>
+            <div class="avatar teacher-avatar" id="headerAvatar"></div>
             <div class="chat-header-info">
                 <h3>Главный инженер ИИваныч</h3>
                 <p>В сети</p>
@@ -405,7 +426,11 @@
     </div>
 
 <script>
-    const defaultAvatarSVG = `
+    // Фото-аватарка ИИваныча (Учитель)
+    const teacherAvatarHTML = `<img src="https://grigoryevalexandra-lgtm.github.io/interactive3/avatar.png" alt="ИИваныч">`;
+
+    // Исходная заглавная SVG-аватарка (Ученик)
+    const studentAvatarSVG = `
         <svg viewBox="0 0 100 100" width="40" height="40">
             <circle cx="50" cy="50" r="50" fill="#2b7de9"/>
             <path d="M50,18c8.8,0,16,7.2,16,16c0,8.8-7.2,16-16,16c-8.8,0-16-7.2-16-16C34,25.2,41.2,18,50,18z M72.8,70.5
@@ -415,7 +440,8 @@
         </svg>
     `;
 
-    document.getElementById('headerAvatar').innerHTML = defaultAvatarSVG;
+    // Устанавливаем аватар ИИваныча в шапку чата при загрузке
+    document.getElementById('headerAvatar').innerHTML = teacherAvatarHTML;
 
     const chatMessages = document.getElementById('chatMessages');
     const inputField = document.getElementById('inputField');
@@ -429,12 +455,13 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    // Индикатор печатания (показывает аватар ИИваныча)
     function showTypingIndicator() {
         const indicator = document.createElement('div');
         indicator.className = 'message-row teacher';
         indicator.id = 'typingIndicator';
         indicator.innerHTML = `
-            <div class="avatar">${defaultAvatarSVG}</div>
+            <div class="avatar teacher-avatar">${teacherAvatarHTML}</div>
             <div class="message-bubble" style="padding: 10px 14px;">
                 <div class="typing-indicator">
                     <div class="typing-dot"></div>
@@ -452,14 +479,22 @@
         if (indicator) indicator.remove();
     }
 
+    // Вывод сообщений с разделением аватарок
     function appendMessage(sender, contentHTML) {
         const msgRow = document.createElement('div');
         msgRow.className = `message-row ${sender}`;
         
-        msgRow.innerHTML = `
-            <div class="avatar">${defaultAvatarSVG}</div>
-            <div class="message-bubble">${contentHTML}</div>
-        `;
+        if (sender === 'teacher') {
+            msgRow.innerHTML = `
+                <div class="avatar teacher-avatar">${teacherAvatarHTML}</div>
+                <div class="message-bubble">${contentHTML}</div>
+            `;
+        } else {
+            msgRow.innerHTML = `
+                <div class="avatar student-avatar">${studentAvatarSVG}</div>
+                <div class="message-bubble">${contentHTML}</div>
+            `;
+        }
         
         chatMessages.appendChild(msgRow);
         scrollToBottom();
@@ -512,7 +547,7 @@
                     <p><strong>Определите ограничения:</strong> «Не выдумывай пункты, которых нет в тексте»</p>
                     <p><strong>Укажите источники:</strong> «Опирайся только на данные из приведенного договора и загруженного Гражданского Кодекса»</p>
                     <p><strong>Задайте формат ответа:</strong> «Ответ составь в виде таблицы из трех строк: «Риск», «Формулировка в договоре», «Рекомендация по изменению». После таблицы - одно предложение с общей оценкой уровня риска.»</p>
-                    <p><strong>Проверьте результат</strong>, сгенерированный ИИ</p>
+                    <p><strong>Проверите результат</strong>, сгенерированный ИИ</p>
                 `;
                 appendMessage('teacher', structureContent);
                 
@@ -628,7 +663,6 @@
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // ПОШАГОВАЯ ПРОВЕРКА С ПОДЦВЕЧИВАНИЕМ КАЖДОЙ КАРТОЧКИ
     function verifySortedOrder() {
         const container = document.getElementById('sortableList');
         const items = container.querySelectorAll('.sort-item');
@@ -637,16 +671,13 @@
         const correctOrder = ["4", "6", "3", "1", "2", "5"];
         let isAllCorrect = true;
 
-        // Перебираем текущие элементы и красим их
         items.forEach((item, index) => {
             const currentId = item.getAttribute('data-id');
             
             if (currentId === correctOrder[index]) {
-                // Карточка на правильной позиции — зеленая
                 item.classList.add('correct-item');
                 item.classList.remove('wrong-item');
             } else {
-                // Карточка на неправильной позиции — красная
                 item.classList.add('wrong-item');
                 item.classList.remove('correct-item');
                 isAllCorrect = false;
@@ -660,17 +691,15 @@
             checkBtn.style.background = "#2b8a3e";
             checkBtn.setAttribute('disabled', 'true');
             
-            // Фиксируем элементы, чтобы нельзя было больше тащить
             items.forEach(item => item.setAttribute('draggable', 'false'));
 
             setTimeout(() => { showTypingIndicator(); }, 600);
             
             setTimeout(() => {
                 removeTypingIndicator();
-                appendMessage('teacher', `<strong>Верно!</strong> Вы отлично справляетесь с задачами. Промпт собран идеально, все блоки подсвечены зеленым! 🎉`);
+                appendMessage('teacher', `<strong>Верно!</strong> Вы отлично справляетесь с задачами. Промпт собран идеально, все blocks подсвечены зеленым! 🎉`);
             }, 1500);
         } else {
-            // Если допущена ошибка
             setTimeout(() => { showTypingIndicator(); }, 600);
             
             setTimeout(() => {
