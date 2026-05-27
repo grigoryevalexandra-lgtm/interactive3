@@ -571,17 +571,17 @@
             showTypingIndicator();
             setTimeout(() => {
                 removeTypingIndicator();
-                appendMessage('teacher', `<p>Запрос «нарисуй узел кровли» даст фотореалистичную картинку с деревьями и солнцем — красиво, но бесполезно для согласования.</p>`);
+                appendMessage('teacher', `<p>А вы знали, что запрос «Нарисуй узел кровли» даст фотореалистичную картинку с деревьями и солнцем — красиво, но бесполезно для согласования?</p>`);
                 
                 currentState = 1;
                 setTimeout(() => {
-                    prepareNextStudentAction("А как нужно задавать вопросы?");
+                    prepareNextStudentAction("Нет, а как нужно задавать вопросы?");
                 }, 800);
             }, 1200);
         } 
         else if (currentState === 1) {
             resetInputArea();
-            appendMessage('student', 'А как нужно задавать вопросы?');
+            appendMessage('student', 'Нет, а как нужно задавать вопросы?');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
