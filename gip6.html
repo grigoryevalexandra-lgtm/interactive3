@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный чат-обучение для ГИП: Анализ смет</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #fff3eb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Times New Roman, Arial, sans-serif;
+            color: #1a1a1a;
+            display: block;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Увеличенная ширина контейнера чата для iframe */
+        .chat-container {
+            max-width: 760px;
+            width: 100%;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            min-height: 600px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        /* Шапка чата */
+        .chat-header {
+            padding: 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #f0e6df;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .chat-header-info p {
+            font-size: 13px;
+            color: #757575;
+        }
+
+        /* Область сообщений */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #fafaf9;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #e0d5ce;
+            border-radius: 4px;
+        }
+
+        /* Элементы сообщений */
+        .message-row {
+            display: flex;
+            gap: 10px;
+            max-width: 85%;
+            animation: messageAppear 0.4s ease-out forwards;
+        }
+
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-row.teacher {
+            align-self: flex-start;
+        }
+
+        .message-row.student {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+            max-width: 85%;
+        }
+
+        /* Аватар-заглушка в стиле WhatsApp */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Стилизация баблов */
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .teacher .message-bubble {
+            background: #ffffff;
+            color: #1a1a1a;
+            border-top-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid #f0f0f0;
+        }
+
+        .student .message-bubble {
+            background: #2b7de9;
+            color: #ffffff;
+            border-top-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(43, 125, 233, 0.2);
+        }
+
+        .message-bubble p {
+            margin-bottom: 8px;
+        }
+        .message-bubble p:last-child {
+            margin-bottom: 0;
+        }
+        .message-bubble ul {
+            margin-left: 18px;
+            margin-bottom: 10px;
+        }
+        .message-bubble ul:last-child {
+            margin-bottom: 0;
+        }
+        .message-bubble li {
+            margin-bottom: 6px;
+        }
+
+        /* Окошко-симулятор ввода промпта */
+        .estimate-checker-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .checker-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .checker-textarea {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.4;
+            font-family: inherit;
+            resize: none;
+            margin-bottom: 10px;
+        }
+
+        .checker-btn {
+            background: #2b7de9;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .checker-btn:hover {
+            background: #1e6cd2;
+        }
+
+        .checker-btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .checker-result {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #14532d;
+            line-height: 1.5;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+
+        /* Тест / Квиз */
+        .quiz-container {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .quiz-btn {
+            background: #f1f3f5;
+            border: 1px solid #e9ecef;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #333;
+            font-family: inherit;
+        }
+
+        .quiz-btn:hover:not(:disabled) {
+            background: #e8ecef;
+            border-color: #ced4da;
+        }
+
+        .quiz-btn strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 15px;
+            color: #111;
+        }
+
+        /* Цветовая подсветка вариантов квиза */
+        .quiz-btn.correct {
+            background: #d3f9d8 !important;
+            border-color: #b2f2bb !important;
+            color: #2b8a3e !important;
+        }
+        .quiz-btn.correct strong { color: #2b8a3e !important; }
+
+        .quiz-btn.wrong {
+            background: #ffe3e3 !important;
+            border-color: #ffa8a8 !important;
+            color: #c92a2a !important;
+        }
+        .quiz-btn.wrong strong { color: #c92a2a !important; }
+
+        /* Нижняя панель ввода */
+        .chat-input-area {
+            padding: 20px;
+            background: #ffffff;
+            border-top: 1px solid #f0e6df;
+            position: relative;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 32px;
+            padding: 6px 6px 6px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input-wrapper.active-input {
+            background: #ffffff;
+            border-color: #2b7de9;
+            box-shadow: 0 0 0 3px rgba(43, 125, 233, 0.15);
+        }
+
+        .fake-input {
+            flex: 1;
+            font-size: 15px;
+            color: #a0aec0;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 10px;
+        }
+
+        .fake-input.filled {
+            color: #1a202c;
+        }
+
+        .send-button {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button.active {
+            background: #2b7de9;
+            cursor: pointer;
+        }
+
+        .send-button.pulse {
+            animation: buttonPulse 2s infinite;
+        }
+
+        @keyframes buttonPulse {
+            0% { box-shadow: 0 0 0 0 rgba(43, 125, 233, 0.5); }
+            70% { box-shadow: 0 0 0 12px rgba(43, 125, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(43, 125, 233, 0); }
+        }
+
+        .send-button svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+            transform: translateX(1px);
+        }
+
+        .tooltip-hint {
+            position: absolute;
+            top: -38px;
+            right: 26px;
+            background: #334155;
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tooltip-hint.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tooltip-hint::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            right: 16px;
+            border-width: 5px 5px 0;
+            border-style: solid;
+            border-color: #334155 transparent;
+        }
+
+        /* Анимация печатания */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            background: #a0aec0;
+            border-radius: 50%;
+            animation: dotBounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="avatar" id="headerAvatar"></div>
+            <div class="chat-header-info">
+                <h3>Главный инженер ИИваныч</h3>
+                <p>В сети</p>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <div class="chat-input-area">
+            <div class="tooltip-hint" id="tooltipHint">Нажмите отправить, чтобы продолжить дальше</div>
+            <div class="chat-input-wrapper" id="inputWrapper">
+                <div class="fake-input" id="inputField">Напишите сообщение...</div>
+                <button class="send-button" id="sendBtn" disabled>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const defaultAvatarSVG = `
+        <svg viewBox="0 0 100 100" width="40" height="40">
+            <circle cx="50" cy="50" r="50" fill="#2b7de9"/>
+            <path d="M50,18c8.8,0,16,7.2,16,16c0,8.8-7.2,16-16,16c-8.8,0-16-7.2-16-16C34,25.2,41.2,18,50,18z M72.8,70.5
+            C71.3,66,68.7,62.1,65.1,59C60.7,55.3,55.3,53.5,50,53.5s-10.7,1.8-15.1,5.5c-3.6,3.1-6.2,7-7.7,11.5
+            c-1.3,4.1-1.2,8.6,0.3,12.7c1.3,3.5,3.9,6.3,7.2,8c3.2,1.6,6.9,2.4,10.6,2.4H50c3.7,0,7.4-0.8,10.6-2.4
+            c3.3-1.7,5.9-4.5,7.2-8C73.9,79.1,74,74.6,72.8,70.5z" fill="white"/>
+        </svg>
+    `;
+
+    document.getElementById('headerAvatar').innerHTML = defaultAvatarSVG;
+
+    const chatMessages = document.getElementById('chatMessages');
+    const inputField = document.getElementById('inputField');
+    const sendBtn = document.getElementById('sendBtn');
+    const inputWrapper = document.getElementById('inputWrapper');
+    const tooltipHint = document.getElementById('tooltipHint');
+
+    let currentState = 0;
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'message-row teacher';
+        indicator.id = 'typingIndicator';
+        indicator.innerHTML = `
+            <div class="avatar">${defaultAvatarSVG}</div>
+            <div class="message-bubble" style="padding: 10px 14px;">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(indicator);
+        scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    function appendMessage(sender, contentHTML) {
+        const msgRow = document.createElement('div');
+        msgRow.className = `message-row ${sender}`;
+        
+        msgRow.innerHTML = `
+            <div class="avatar">${defaultAvatarSVG}</div>
+            <div class="message-bubble">${contentHTML}</div>
+        `;
+        
+        chatMessages.appendChild(msgRow);
+        scrollToBottom();
+    }
+
+    function prepareNextStudentAction(text) {
+        inputField.innerText = text;
+        inputField.classList.add('filled');
+        inputWrapper.classList.add('active-input');
+        sendBtn.removeAttribute('disabled');
+        sendBtn.classList.add('active', 'pulse');
+        tooltipHint.classList.add('show');
+    }
+
+    function resetInputArea() {
+        inputField.innerText = "Напишите сообщение...";
+        inputField.classList.remove('filled');
+        inputWrapper.classList.remove('active-input');
+        sendBtn.setAttribute('disabled', 'true');
+        sendBtn.classList.remove('active', 'pulse');
+        tooltipHint.classList.remove('show');
+    }
+
+    // Сценарий диалога
+    function runDialogueStep() {
+        if (currentState === 0) {
+            showTypingIndicator();
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const initialText = `
+                    <p><strong>Что можно делегировать ИИ:</strong></p>
+                    <ul>
+                        <li>Сравнение цен по позициям с рыночными данными</li>
+                        <li>Поиск аномалий: резкие скачки стоимости, несоответствие объёмов</li>
+                        <li>Генерация вариантов замены материалов с расчётом разницы</li>
+                        <li>Формирование таблиц рисков перерасхода по этапам</li>
+                    </ul>
+                    <p><strong>Что не стоит делегировать ИИ:</strong></p>
+                    <ul>
+                        <li>Окончательный расчёт сметы в 1С, Гранд-Смета</li>
+                        <li>Применение коэффициентов и норм без проверки</li>
+                        <li>Утверждение итоговых цифр для заказчика</li>
+                    </ul>
+                    <p>ИИ работает с текстом, а не с базами расценок. Всегда сверяйте его выводы с официальными источниками и сметными программами.</p>
+                `;
+                appendMessage('teacher', initialText);
+                
+                currentState = 1;
+                setTimeout(() => {
+                    prepareNextStudentAction("А как работает нейросеть со сметами, покажи пример.");
+                }, 800);
+            }, 1500);
+        } 
+        else if (currentState === 1) {
+            resetInputArea();
+            appendMessage('student', 'А как работает нейросеть со сметами, покажи пример.');
+            
+            setTimeout(() => { showTypingIndicator(); }, 800);
+
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const promptBlock = `
+                    <p>Пример промпта:</p>
+                    <div class="estimate-checker-box">
+                        <div class="checker-title">🤖 ИИ-Инструмент Проверки ПТО</div>
+                        <textarea class="checker-textarea" rows="5" readonly>«Ты - инженер ПТО, работаешь по Методике №421/пр. Проверь фрагмент сметы на завышенные коэффициенты к зарплате и возможное задвоение работ. Опирайся на Приложение №10. При отсутствии позиций в ФРСН укажи необходимость конъюнктурного анализа. Данные сметы: «Монтаж лотков – 100 м.п. – коэф. 1,8; Прокладка кабеля – 500 м – коэф. 1,2». Ответ оформи таблицей: позиция, нарушение, нормативное обоснование, рекомендация.»</textarea>
+                        <button class="checker-btn" id="runEstimateCheckBtn" onclick="triggerEstimateCheck()">Отправить промпт в нейросеть</button>
+                        <div class="checker-result" id="estimateResult">
+                            <strong>Результат работы нейросети:</strong><br>
+                            • Коэф. 1,8 завышен - норма 1,15-1,25.<br>
+                            • Возможно задвоение трудозатрат.<br>
+                            • Требуется конъюнктурный анализ.
+                        </div>
+                    </div>
+                    <p style="margin-top: 10px;">Загрузите его и посмотрите, какой ответ выдаст нейросеть.</p>
+                `;
+                appendMessage('teacher', promptBlock);
+                currentState = 2; // Ждем клика по кнопке внутри виджета
+            }, 1500);
+        }
+        else if (currentState === 3) {
+            // Этот шаг срабатывает автоматически после завершения анализа в виджете
+            showTypingIndicator();
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const quizContent = `
+                    <p>Давайте закрепим. Ниже — фрагмент сметы и два варианта анализа от нейросети. Один правильный, а другой с ошибками. Выберите верный.</p>
+                    <p style="margin-top: 8px;"><strong>Какое заключение нейросети правильное?</strong></p>
+                    
+                    <div class="quiz-container">
+                        <button class="quiz-btn" id="btnOptA" onclick="evaluateQuizChoice('A')">
+                            <strong>Вариант А</strong>
+                            Коэффициент 1,8 завышен, норма 1,15-1,3. Работы «Монтаж лотков» и «Прокладка кабеля» дублируют подготовку трассы. Требуется конъюнктурный анализ по п. 13-22 Методики №421/пр. Рекомендуется запросить у субподрядчика расшифровку трудозатрат и обоснование коэффициента.
+                        </button>
+                        <button class="quiz-btn" id="btnOptB" onclick="evaluateQuizChoice('B')">
+                            <strong>Вариант Б</strong>
+                            Коэффициент 1,8 допустим для работ в стесненных условиях. Дублирования нет, так как «монтаж лотков» и «прокладка кабеля» – разнородные операции. Конъюнктурный анализ не требуется. Смета может быть принята без изменений.
+                        </button>
+                    </div>
+                `;
+                appendMessage('teacher', quizContent);
+                currentState = 4;
+            }, 1500);
+        }
+    }
+
+    // Симуляция отправки промпта в ИИ
+    function triggerEstimateCheck() {
+        const resultDiv = document.getElementById('estimateResult');
+        const actionButton = document.getElementById('runEstimateCheckBtn');
+        
+        actionButton.setAttribute('disabled', 'true');
+        actionButton.innerText = "Анализ выполнен";
+        resultDiv.style.display = "block";
+        scrollToBottom();
+
+        // Автоматически переходим к следующему шагу учителя
+        currentState = 3;
+        runDialogueStep();
+    }
+
+    // Обработка ответов квиза
+    function evaluateQuizChoice(selected) {
+        const btnA = document.getElementById('btnOptA');
+        const btnB = document.getElementById('btnOptB');
+        
+        btnA.setAttribute('disabled', 'true');
+        btnB.setAttribute('disabled', 'true');
+
+        if (selected === 'A') {
+            btnA.classList.add('correct');
+            
+            setTimeout(() => { showTypingIndicator(); }, 600);
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const responseCorrect = `
+                    <p><strong>Ответ А — Верно!</strong> Это правильный анализ.</p>
+                    <ul>
+                        <li>Коэффициент 1,8 превышает нормы на данные работы приложения №10 Методики №421/пр.</li>
+                        <li>Работы могут дублировать подготовку трассы, что требует проверки.</li>
+                        <li>Если позиции отсутствуют в ФРСН, нужен конъюнктурный анализ п. 13-22.</li>
+                    </ul>
+                `;
+                appendMessage('teacher', responseCorrect);
+            }, 1500);
+        } else {
+            btnB.classList.add('wrong');
+            btnA.classList.add('correct'); // Подсвечиваем верный для закрепления материала
+            
+            setTimeout(() => { showTypingIndicator(); }, 600);
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const responseWrong = `
+                    <p><strong>Неверно.</strong> Вариант Б содержит грубые ошибки.</p>
+                    <p>Коэффициент 1,8 значительно превышает допустимые нормы приложения №10 Методики №421/пр для данного типа работ. Пропуск такой аномалии ИИ приведёт к завышению бюджета. Вариант А точно указывает на регуляторные требования и необходимость конъюнктурного анализа.</p>
+                `;
+                appendMessage('teacher', responseWrong);
+            }, 1500);
+        }
+    }
+
+    sendBtn.addEventListener('click', () => {
+        if (!sendBtn.hasAttribute('disabled')) {
+            runDialogueStep();
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        runDialogueStep();
+    });
+</script>
+
+</body>
+</html>

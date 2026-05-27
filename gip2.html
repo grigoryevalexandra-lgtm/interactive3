@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный чат-обучение для ГИП</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #fff3eb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Times New Roman, Arial, sans-serif;
+            color: #1a1a1a;
+            display: block;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Увеличена ширина контейнера чата для красивого отображения в iframe */
+        .chat-container {
+            max-width: 760px;
+            width: 100%;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            min-height: 600px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        /* Шапка чата */
+        .chat-header {
+            padding: 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #f0e6df;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .chat-header-info p {
+            font-size: 13px;
+            color: #757575;
+        }
+
+        /* Область сообщений */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #fafaf9;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #e0d5ce;
+            border-radius: 4px;
+        }
+
+        /* Элементы сообщений */
+        .message-row {
+            display: flex;
+            gap: 10px;
+            max-width: 85%;
+            animation: messageAppear 0.4s ease-out forwards;
+        }
+
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-row.teacher {
+            align-self: flex-start;
+        }
+
+        .message-row.student {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+            max-width: 85%;
+        }
+
+        /* Контейнер для аватара-заглушки */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Базовая стилизация баблов сообщений */
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .teacher .message-bubble {
+            background: #ffffff;
+            color: #1a1a1a;
+            border-top-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid #f0f0f0;
+        }
+
+        .student .message-bubble {
+            background: #2b7de9;
+            color: #ffffff;
+            border-top-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(43, 125, 233, 0.2);
+        }
+
+        .message-bubble p {
+            margin-bottom: 8px;
+        }
+        .message-bubble p:last-child {
+            margin-bottom: 0;
+        }
+        .message-bubble ul, .message-bubble ol {
+            margin-left: 18px;
+            margin-bottom: 10px;
+        }
+        .message-bubble ul:last-child, .message-bubble ol:last-child {
+            margin-bottom: 0;
+        }
+        .message-bubble li {
+            margin-bottom: 6px;
+        }
+
+        /* Предупреждение с лампочкой */
+        .warning-card {
+            background: #fff9db;
+            border-left: 4px solid #fcc419;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: flex;
+            gap: 12px;
+            color: #2b2b2b;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .warning-card .bulb {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        /* Интерактивная зона перетаскивания (Drag & Drop) */
+        .sortable-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 15px 0;
+            width: 100%;
+        }
+
+        .sort-item {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.4;
+            cursor: grab;
+            user-select: none;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.2s;
+        }
+
+        .sort-item:hover {
+            background: #f1f5f9;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        /* Стиль карточки в момент переноса */
+        .sort-item.dragging {
+            opacity: 0.4;
+            background: #e2e8f0;
+            border: 1px dashed #2b7de9;
+            cursor: grabbing;
+        }
+
+        /* ЦВЕТОВАЯ ПОДСВЕТКА РЕЗУЛЬТАТОВ СОРТИРОВКИ */
+        .sort-item.correct-item {
+            background-color: #d3f9d8 !important;
+            border-color: #b2f2bb !important;
+            color: #2b8a3e !important;
+        }
+
+        .sort-item.wrong-item {
+            background-color: #ffe3e3 !important;
+            border-color: #ffa8a8 !important;
+            color: #c92a2a !important;
+        }
+
+        /* Кнопка проверки сортировки */
+        .check-sort-btn {
+            background: #2b7de9;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            box-shadow: 0 4px 12px rgba(43, 125, 233, 0.2);
+        }
+
+        .check-sort-btn:hover:not(:disabled) {
+            background: #1e6cd2;
+        }
+
+        .check-sort-btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Нижняя панель ввода */
+        .chat-input-area {
+            padding: 20px;
+            background: #ffffff;
+            border-top: 1px solid #f0e6df;
+            position: relative;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 32px;
+            padding: 6px 6px 6px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input-wrapper.active-input {
+            background: #ffffff;
+            border-color: #2b7de9;
+            box-shadow: 0 0 0 3px rgba(43, 125, 233, 0.15);
+        }
+
+        .fake-input {
+            flex: 1;
+            font-size: 15px;
+            color: #a0aec0;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 10px;
+        }
+
+        .fake-input.filled {
+            color: #1a202c;
+        }
+
+        .send-button {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button.active {
+            background: #2b7de9;
+            cursor: pointer;
+        }
+
+        .send-button.pulse {
+            animation: buttonPulse 2s infinite;
+        }
+
+        @keyframes buttonPulse {
+            0% { box-shadow: 0 0 0 0 rgba(43, 125, 233, 0.5); }
+            70% { box-shadow: 0 0 0 12px rgba(43, 125, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(43, 125, 233, 0); }
+        }
+
+        .send-button svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+            transform: translateX(1px);
+        }
+
+        .tooltip-hint {
+            position: absolute;
+            top: -38px;
+            right: 26px;
+            background: #334155;
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tooltip-hint.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tooltip-hint::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            right: 16px;
+            border-width: 5px 5px 0;
+            border-style: solid;
+            border-color: #334155 transparent;
+        }
+
+        /* Анимация печатания */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            background: #a0aec0;
+            border-radius: 50%;
+            animation: dotBounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="avatar" id="headerAvatar"></div>
+            <div class="chat-header-info">
+                <h3>Главный инженер ИИваныч</h3>
+                <p>В сети</p>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <div class="chat-input-area">
+            <div class="tooltip-hint" id="tooltipHint">Нажмите отправить, чтобы продолжить дальше</div>
+            <div class="chat-input-wrapper" id="inputWrapper">
+                <div class="fake-input" id="inputField">Напишите сообщение...</div>
+                <button class="send-button" id="sendBtn" disabled>
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const defaultAvatarSVG = `
+        <svg viewBox="0 0 100 100" width="40" height="40">
+            <circle cx="50" cy="50" r="50" fill="#2b7de9"/>
+            <path d="M50,18c8.8,0,16,7.2,16,16c0,8.8-7.2,16-16,16c-8.8,0-16-7.2-16-16C34,25.2,41.2,18,50,18z M72.8,70.5
+            C71.3,66,68.7,62.1,65.1,59C60.7,55.3,55.3,53.5,50,53.5s-10.7,1.8-15.1,5.5c-3.6,3.1-6.2,7-7.7,11.5
+            c-1.3,4.1-1.2,8.6,0.3,12.7c1.3,3.5,3.9,6.3,7.2,8c3.2,1.6,6.9,2.4,10.6,2.4H50c3.7,0,7.4-0.8,10.6-2.4
+            c3.3-1.7,5.9-4.5,7.2-8C73.9,79.1,74,74.6,72.8,70.5z" fill="white"/>
+        </svg>
+    `;
+
+    document.getElementById('headerAvatar').innerHTML = defaultAvatarSVG;
+
+    const chatMessages = document.getElementById('chatMessages');
+    const inputField = document.getElementById('inputField');
+    const sendBtn = document.getElementById('sendBtn');
+    const inputWrapper = document.getElementById('inputWrapper');
+    const tooltipHint = document.getElementById('tooltipHint');
+
+    let currentState = 0;
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'message-row teacher';
+        indicator.id = 'typingIndicator';
+        indicator.innerHTML = `
+            <div class="avatar">${defaultAvatarSVG}</div>
+            <div class="message-bubble" style="padding: 10px 14px;">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(indicator);
+        scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    function appendMessage(sender, contentHTML) {
+        const msgRow = document.createElement('div');
+        msgRow.className = `message-row ${sender}`;
+        
+        msgRow.innerHTML = `
+            <div class="avatar">${defaultAvatarSVG}</div>
+            <div class="message-bubble">${contentHTML}</div>
+        `;
+        
+        chatMessages.appendChild(msgRow);
+        scrollToBottom();
+    }
+
+    function prepareNextStudentAction(text) {
+        inputField.innerText = text;
+        inputField.classList.add('filled');
+        inputWrapper.classList.add('active-input');
+        sendBtn.removeAttribute('disabled');
+        sendBtn.classList.add('active', 'pulse');
+        tooltipHint.classList.add('show');
+    }
+
+    function resetInputArea() {
+        inputField.innerText = "Напишите сообщение...";
+        inputField.classList.remove('filled');
+        inputWrapper.classList.remove('active-input');
+        sendBtn.setAttribute('disabled', 'true');
+        sendBtn.classList.remove('active', 'pulse');
+        tooltipHint.classList.remove('show');
+    }
+
+    function runDialogueStep() {
+        if (currentState === 0) {
+            showTypingIndicator();
+            setTimeout(() => {
+                removeTypingIndicator();
+                appendMessage('teacher', `<p>Системный промпт — это «должностная инструкция» для ИИ. Он задает контекст, стиль и ограничения для ваших задач. Без него нейросеть строит «общий» ответ, часто добавляет «воду» и может галлюцинировать. Всегда корректируйте его под свою задачу.</p>`);
+                
+                currentState = 1;
+                setTimeout(() => {
+                    prepareNextStudentAction("Как же сформулировать хороший промпт?");
+                }, 800);
+            }, 1500);
+        } 
+        else if (currentState === 1) {
+            resetInputArea();
+            appendMessage('student', 'Как же сформулировать хороший промпт?');
+            
+            setTimeout(() => { showTypingIndicator(); }, 800);
+
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const structureContent = `
+                    <p>Соблюдайте эту структуру промпта и ответ всегда будет качественный:</p>
+                    <p style="margin-top: 6px;"><strong>Определите роль:</strong> «Ты - опытный ГИП в строительстве жилья со стажем 15 лет…»</p>
+                    <p><strong>Сформулируйте цель:</strong> «Проанализируй представленный пункт договора и найди три самых опасных условия для Генподрядчика с точки зрения финансовых потерь и сроков»</p>
+                    <p><strong>Определите ограничения:</strong> «Не выдумывай пункты, которых нет в тексте»</p>
+                    <p><strong>Укажите источники:</strong> «Опирайся только на данные из приведенного договора и загруженного Гражданского Кодекса»</p>
+                    <p><strong>Задайте формат ответа:</strong> «Ответ составь в виде таблицы из трех строк: «Риск», «Формулировка в договоре», «Рекомендация по изменению». После таблицы - одно предложение с общей оценкой уровня риска.»</p>
+                    <p><strong>Проверьте результат</strong>, сгенерированный ИИ</p>
+                `;
+                appendMessage('teacher', structureContent);
+                
+                currentState = 2;
+                setTimeout(() => {
+                    prepareNextStudentAction("Покажи пример");
+                }, 1500);
+            }, 2500);
+        }
+        else if (currentState === 2) {
+            resetInputArea();
+            appendMessage('student', 'Покажи пример');
+            
+            setTimeout(() => { showTypingIndicator(); }, 800);
+
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const exampleContent = `
+                    <p style="font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-style: italic; color: #475569;">
+                    Ты - главный инженер проекта строительства жилого комплекса со стажем 12 лет. Ты отвечаешь за соблюдение календарного плана, управляешь рисками по всему проекту и взаимодействуешь с заказчиком и подрядчиками. Проанализируй текущее отставание от календарного графика на 7 дней по этапу «Кровельные работы». Предложи перечень из 3-5 компенсирующих мероприятий, которые позволят нагнать срок без увеличения бюджета. Не предлагай привлечение дополнительных бригад без крайней необходимости. Не меняй технологическую последовательность, противоречащую ПОС. Не ссылайся на погодные условия как на единственную причину. Учитывай только те ресурсы, которые реально доступны на объекте.<br><br>
+                    Причина отставания - задержка поставки утеплителя. Второстепенная причина - низкая производительность кровельщиков. Используй календарный план и загруженные нормативы продолжительности кровельных работ.<br><br>
+                    Ответ представь в виде таблицы с колонками: «Мероприятие», «Ожидаемый эффект (дней)», «Необходимые ресурсы», «Риски». После таблицы - составь текст проекта уведомления заказчику о задержке и предлагаемых мерах в официальном деловом тоне, со ссылкой на график.<br><br>
+                    Убедись, что каждое мероприятие не противоречит СП 48.13330 и не создает коллизий с другими этапами. Проверь, что письмо заказчику содержит конкретные даты и ответственных.
+                    </p>
+                `;
+                appendMessage('teacher', exampleContent);
+                
+                currentState = 3;
+                setTimeout(() => {
+                    prepareNextStudentAction("Вау, получился очень структурированный промпт! Хочу составить такой же.");
+                }, 1500);
+            }, 2500);
+        }
+        else if (currentState === 3) {
+            resetInputArea();
+            appendMessage('student', 'Вау, получился очень структурированный промпт! Хочу составить такой же.');
+            
+            setTimeout(() => { showTypingIndicator(); }, 800);
+
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const quizContent = `
+                    <p>Заказчик задержал утверждение архитектурной концепции интерьеров, из-за чего проектный отдел простаивает. Вам нужно, чтобы нейросеть составила проект письма о переносе срока сдачи раздела АР. Соберите промпт, расставив блоки по порядку.</p>
+                    
+                    <div class="warning-card">
+                        <div class="bulb">💡</div>
+                        <div><strong>Памятка последовательности:</strong><br>
+                        1. Роль &rarr; 2. Цель &rarr; 3. Ограничения &rarr; 4. Источники &rarr; 5. Формат ответа &rarr; 6. Проверка</div>
+                    </div>
+
+                    <p style="margin-top: 15px; font-weight: 600; font-size: 14px; color: #475569;">Перетаскивайте блоки мышкой вверх или вниз, чтобы выстроить правильный порядок:</p>
+
+                    <div class="sortable-container" id="sortableList">
+                        <div class="sort-item" draggable="true" data-id="1"><strong>1.</strong> Задержка вызвана отсутствием утвержденного дизайн-проекта интерьеров (исходящий запрос от 10.04.2026). Ссылка на пункт 4.2 договора.</div>
+                        <div class="sort-item" draggable="true" data-id="2"><strong>2.</strong> Составь письмо с полями «Тема», «Текст». После - краткая выжимка на 3 строки: причина, следствие, предложение.</div>
+                        <div class="sort-item" draggable="true" data-id="3"><strong>3.</strong> Тон письма - уважительный и официально-деловой, без обвинений. Не упоминай конкретные должности. Длина - не более 1200 знаков.</div>
+                        <div class="sort-item" draggable="true" data-id="4"><strong>4.</strong> Ты - главный инженер проекта жилого комплекса с опытом работы 10 лет. Ты отвечаешь за график и умеешь вести диалог.</div>
+                        <div class="sort-item" draggable="true" data-id="5"><strong>5.</strong> Убедись, что в письме нет эмоциональных формулировок, есть ссылка на договор и указан конкретный срок задержки.</div>
+                        <div class="sort-item" draggable="true" data-id="6"><strong>6.</strong> Подготовь проект официального письма заказчику о переносе срока сдачи раздела АР на 7 календарных дней.</div>
+                    </div>
+
+                    <button class="check-sort-btn" id="checkSortBtn" onclick="verifySortedOrder()">Проверить последовательность</button>
+                `;
+                appendMessage('teacher', quizContent);
+                currentState = 4;
+                
+                initDragAndDrop();
+            }, 2000);
+        }
+    }
+
+    function initDragAndDrop() {
+        const container = document.getElementById('sortableList');
+        const draggables = container.querySelectorAll('.sort-item');
+
+        draggables.forEach(draggable => {
+            draggable.addEventListener('dragstart', () => {
+                draggable.classList.add('dragging');
+            });
+
+            draggable.addEventListener('dragend', () => {
+                draggable.classList.remove('dragging');
+            });
+        });
+
+        container.addEventListener('dragover', e => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(container, e.clientY);
+            const draggable = document.querySelector('.dragging');
+            if (draggable == null) return;
+            
+            if (afterElement == null) {
+                container.appendChild(draggable);
+            } else {
+                container.insertBefore(draggable, afterElement);
+            }
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.sort-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // ПОШАГОВАЯ ПРОВЕРКА С ПОДЦВЕЧИВАНИЕМ КАЖДОЙ КАРТОЧКИ
+    function verifySortedOrder() {
+        const container = document.getElementById('sortableList');
+        const items = container.querySelectorAll('.sort-item');
+        
+        // Правильный порядок по ТЗ: Роль(4), Цель(6), Ограничения(3), Источники(1), Формат(2), Проверка(5)
+        const correctOrder = ["4", "6", "3", "1", "2", "5"];
+        let isAllCorrect = true;
+
+        // Перебираем текущие элементы и красим их
+        items.forEach((item, index) => {
+            const currentId = item.getAttribute('data-id');
+            
+            if (currentId === correctOrder[index]) {
+                // Карточка на правильной позиции — зеленая
+                item.classList.add('correct-item');
+                item.classList.remove('wrong-item');
+            } else {
+                // Карточка на неправильной позиции — красная
+                item.classList.add('wrong-item');
+                item.classList.remove('correct-item');
+                isAllCorrect = false;
+            }
+        });
+        
+        const checkBtn = document.getElementById('checkSortBtn');
+
+        if (isAllCorrect) {
+            checkBtn.innerText = "Правильно!";
+            checkBtn.style.background = "#2b8a3e";
+            checkBtn.setAttribute('disabled', 'true');
+            
+            // Фиксируем элементы, чтобы нельзя было больше тащить
+            items.forEach(item => item.setAttribute('draggable', 'false'));
+
+            setTimeout(() => { showTypingIndicator(); }, 600);
+            
+            setTimeout(() => {
+                removeTypingIndicator();
+                appendMessage('teacher', `<strong>Верно!</strong> Вы отлично справляетесь с задачами. Промпт собран идеально, все блоки подсвечены зеленым! 🎉`);
+            }, 1500);
+        } else {
+            // Если допущена ошибка
+            setTimeout(() => { showTypingIndicator(); }, 600);
+            
+            setTimeout(() => {
+                removeTypingIndicator();
+                appendMessage('teacher', `Не совсем верно. Обратите внимание на подсвеченные блоки: <strong>зеленые</strong> стоят верно, а <strong>красные</strong> нужно переставить. Попробуйте поменять их местами еще раз!`);
+            }, 1000);
+        }
+    }
+
+    sendBtn.addEventListener('click', () => {
+        if (!sendBtn.hasAttribute('disabled')) {
+            runDialogueStep();
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        runDialogueStep();
+    });
+</script>
+
+</body>
+</html>
