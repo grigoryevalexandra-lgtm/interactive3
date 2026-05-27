@@ -518,13 +518,13 @@
                 
                 currentState = 2;
                 setTimeout(() => {
-                    prepareNextStudentAction("Покажи пример");
+                    prepareNextStudentAction("Покажите пример");
                 }, 1500);
             }, 2500);
         }
         else if (currentState === 2) {
             resetInputArea();
-            appendMessage('student', 'Покажи пример');
+            appendMessage('student', 'Покажите пример');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
