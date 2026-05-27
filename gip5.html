@@ -13,7 +13,7 @@
 
         body {
             background-color: #fff3eb;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Times New Roman, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             color: #1a1a1a;
             display: block;
             min-height: 100vh;
@@ -81,6 +81,7 @@
             display: flex;
             gap: 10px;
             max-width: 85%;
+            align-items: flex-start;
             animation: messageAppear 0.4s ease-out forwards;
         }
 
@@ -99,16 +100,36 @@
             max-width: 85%;
         }
 
-        /* Контейнер для аватара-заглушки в стиле WhatsApp */
+        /* БАЗОВЫЙ КЛАСС АВАТАРОК */
         .avatar {
-            width: 40px;
-            height: 40px;
             border-radius: 50%;
             flex-shrink: 0;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+        }
+
+        /* АВАТАРКА ИИВАНЫЧА (УЧИТЕЛЬ) */
+        .avatar.teacher-avatar {
+            width: 54px;
+            height: 54px;
+            border: 2px solid #ffffff;
+            background-color: #2b7de9;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .avatar.teacher-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center bottom;
+        }
+
+        /* АВАТАРКА УЧЕНИКА (ОСТАЕТСЯ ПРЕЖНЕЙ) */
+        .avatar.student-avatar {
+            width: 40px;
+            height: 40px;
         }
 
         /* Базовая стилизация баблов сообщений */
@@ -149,6 +170,27 @@
         }
         .message-bubble li {
             margin-bottom: 6px;
+        }
+
+        /* Оформление карточек-примеров ИИ внутри сообщений */
+        .ai-code-block {
+            font-size: 14px; 
+            background: #f8fafc; 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 1px solid #e2e8f0; 
+            color: #334155;
+            margin: 8px 0;
+        }
+
+        .ai-result-block {
+            font-size: 14px; 
+            background: #f0fdf4; 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 1px solid #bbf7d0; 
+            color: #166534;
+            margin-top: 8px;
         }
 
         /* Стилизация выделенного блока с промптом */
@@ -351,7 +393,7 @@
 
     <div class="chat-container">
         <div class="chat-header">
-            <div class="avatar" id="headerAvatar"></div>
+            <div class="avatar teacher-avatar" id="headerAvatar"></div>
             <div class="chat-header-info">
                 <h3>Главный инженер ИИваныч</h3>
                 <p>В сети</p>
@@ -374,7 +416,11 @@
     </div>
 
 <script>
-    const defaultAvatarSVG = `
+    // Фото-аватарка ИИваныча (Учитель)
+    const teacherAvatarHTML = `<img src="https://grigoryevalexandra-lgtm.github.io/interactive3/avatar.png" alt="ИИваныч">`;
+
+    // Исходная заглавная SVG-аватарка (Ученик)
+    const studentAvatarSVG = `
         <svg viewBox="0 0 100 100" width="40" height="40">
             <circle cx="50" cy="50" r="50" fill="#2b7de9"/>
             <path d="M50,18c8.8,0,16,7.2,16,16c0,8.8-7.2,16-16,16c-8.8,0-16-7.2-16-16C34,25.2,41.2,18,50,18z M72.8,70.5
@@ -384,7 +430,8 @@
         </svg>
     `;
 
-    document.getElementById('headerAvatar').innerHTML = defaultAvatarSVG;
+    // Устанавливаем аватар ИИваныча в шапку чата при загрузке
+    document.getElementById('headerAvatar').innerHTML = teacherAvatarHTML;
 
     const chatMessages = document.getElementById('chatMessages');
     const inputField = document.getElementById('inputField');
@@ -398,12 +445,13 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    // Индикатор печатания (показывает аватар ИИваныча)
     function showTypingIndicator() {
         const indicator = document.createElement('div');
         indicator.className = 'message-row teacher';
         indicator.id = 'typingIndicator';
         indicator.innerHTML = `
-            <div class="avatar">${defaultAvatarSVG}</div>
+            <div class="avatar teacher-avatar">${teacherAvatarHTML}</div>
             <div class="message-bubble" style="padding: 10px 14px;">
                 <div class="typing-indicator">
                     <div class="typing-dot"></div>
@@ -421,14 +469,22 @@
         if (indicator) indicator.remove();
     }
 
+    // Вывод сообщений с разделением аватарок
     function appendMessage(sender, contentHTML) {
         const msgRow = document.createElement('div');
         msgRow.className = `message-row ${sender}`;
         
-        msgRow.innerHTML = `
-            <div class="avatar">${defaultAvatarSVG}</div>
-            <div class="message-bubble">${contentHTML}</div>
-        `;
+        if (sender === 'teacher') {
+            msgRow.innerHTML = `
+                <div class="avatar teacher-avatar">${teacherAvatarHTML}</div>
+                <div class="message-bubble">${contentHTML}</div>
+            `;
+        } else {
+            msgRow.innerHTML = `
+                <div class="avatar student-avatar">${studentAvatarSVG}</div>
+                <div class="message-bubble">${contentHTML}</div>
+            `;
+        }
         
         chatMessages.appendChild(msgRow);
         scrollToBottom();
@@ -455,7 +511,6 @@
     // Управление ходом сценария чата
     function runDialogueStep() {
         if (currentState === 0) {
-            // Первый запуск — подготавливаем первый вопрос ученика
             currentState = 1;
             prepareNextStudentAction("Что такое mymeet.ai?");
         } 
@@ -470,9 +525,7 @@
                 
                 currentState = 2;
                 setTimeout(() => {
-                    prepareNextStudentAction("What does it do besides transcription?");
-                    // Корректируем под русский текст из ТЗ
-                    inputField.innerText = "Что он умеет, кроме транскрибации?";
+                    prepareNextStudentAction("Что он умеет, кроме транскрибации?");
                 }, 1000);
             }, 1800);
         }
@@ -648,12 +701,11 @@
                     </div>
                 `;
                 appendMessage('teacher', quizBlock);
-                currentState = 9; // Конец сценария ввода, управление переходит на кнопки квиза
+                currentState = 9;
             }, 1500);
         }
     }
 
-    // Проверка выбора в квизе с цветовой подсветкой
     function selectAnswer(choice) {
         const btnA = document.getElementById('optA');
         const btnB = document.getElementById('optB');
@@ -671,7 +723,7 @@
             }, 1400);
         } else {
             btnB.classList.add('wrong');
-            btnA.classList.add('correct'); // Подсвечиваем верный для закрепления материала
+            btnA.classList.add('correct');
             
             setTimeout(() => { showTypingIndicator(); }, 600);
             setTimeout(() => {
