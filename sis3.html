@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #fff3eb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #1a1a1a;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .test-container {
+            max-width: 760px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            padding: 30px;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .task-description {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .quiz-btn {
+            background: #f1f3f5;
+            border: 1px solid #e9ecef;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 15px;
+            line-height: 1.5;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #333;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .quiz-btn:hover {
+            background: #e8ecef;
+            border-color: #ced4da;
+        }
+
+        .quiz-btn.correct {
+            background: #d3f9d8 !important;
+            border-color: #b2f2bb !important;
+            color: #2b8a3e !important;
+            font-weight: 500;
+        }
+
+        .quiz-btn.wrong {
+            background: #ffe3e3 !important;
+            border-color: #ffa8a8 !important;
+            color: #c92a2a !important;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .feedback.correct-text {
+            background: #e6fcf5;
+            border: 1px solid #c3fae8;
+            color: #0ca678;
+            display: block;
+        }
+
+        .feedback.wrong-text {
+            background: #fff5f5;
+            border: 1px solid #ffe3e3;
+            color: #f03e3e;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="test-container">
+    <div class="task-description">
+        Три разных сервиса превратили фразу «Проверь договор на риски» в промпт. Какой из них самый полный и соответствующий правильной структуре?
+    </div>
+
+    <div class="quiz-container">
+        <button class="quiz-btn" id="btn1" onclick="checkAnswer(1)">
+            1) «Ты - опытный юрист строительной компании, специализирующийся на договорах подряда. Проанализируй представленный пункт договора и найди три самых опасных условия для Генподрядчика с точки зрения финансовых потерь и сроков. Не выдумывай пункты, которых нет в тексте. Опирайся только на приведенный пункт. Дай ответ строго в виде таблицы из трех колонок: Риск, Формулировка в договоре, Рекомендация по изменению. После таблицы - одно предложение с общей оценкой уровня риска. Убедись, что каждая рекомендация ссылается на конкретную часть исходного пункта.»
+        </button>
+        <button class="quiz-btn" id="btn2" onclick="checkAnswer(2)">
+            2) «Ты - юрист. Проанализируй договор. Дай ответ таблицей»
+        </button>
+        <button class="quiz-btn" id="btn3" onclick="checkAnswer(3)">
+            3) «Проверь договор и найди риски»
+        </button>
+    </div>
+
+    <div id="feedbackBlock" class="feedback"></div>
+</div>
+
+<script>
+    function checkAnswer(selectedOption) {
+        const btn1 = document.getElementById('btn1');
+        const btn2 = document.getElementById('btn2');
+        const btn3 = document.getElementById('btn3');
+        const feedback = document.getElementById('feedbackBlock');
+
+        // Сброс состояния кнопок
+        btn1.className = 'quiz-btn';
+        btn2.className = 'quiz-btn';
+        btn3.className = 'quiz-btn';
+
+        if (selectedOption === 1) {
+            btn1.classList.add('correct');
+            feedback.className = 'feedback correct-text';
+            feedback.innerText = 'Верно, этот промпт содержит все необходимые элементы структуры.';
+        } else {
+            if (selectedOption === 2) btn2.classList.add('wrong');
+            if (selectedOption === 3) btn3.classList.add('wrong');
+            feedback.className = 'feedback wrong-text';
+            feedback.innerText = 'Неверно, попробуйте еще раз.';
+        }
+    }
+</script>
+
+</body>
+</html>
