@@ -473,17 +473,17 @@
             showTypingIndicator();
             setTimeout(() => {
                 removeTypingIndicator();
-                appendMessage('teacher', `<p>Вы все еще тонете в таблицах и административной работе? Представьте цифрового напарника, который не путает марки бетона и не просит отпуск. Давайте разберем, какие задачи ГИП может поручить нейросети.</p>`);
+                appendMessage('teacher', `<p>Здравствуйте, коллега! Вы все еще тонете в таблицах и административной работе? Представьте цифрового напарника, который не путает марки бетона и не просит отпуск. Давайте разберем, какие задачи ГИП может поручить нейросети.</p>`);
                 
                 currentState = 1;
                 setTimeout(() => {
-                    prepareNextStudentAction("Давайте!");
+                    prepareNextStudentAction("Добрый день. Давайте!");
                 }, 800);
             }, 1500);
         } 
         else if (currentState === 1) {
             resetInputArea();
-            appendMessage('student', 'Давайте!');
+            appendMessage('student', 'Добрый день. Давайте!');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
@@ -509,7 +509,7 @@
                     </ul>
                     <div class="warning-card">
                         <div class="bulb">💡</div>
-                        <div><strong>Важно:</strong> ИИ готовит черновик &rarr; вы проверяете &rarr; вы утверждаете. ИИ сокращает время работы, но не заменяет вас.</div>
+                        <div><strong>Важно:</strong> ИИ готовит черновик &rarr; вы проверяете &rarr; и утверждаете. ИИ сокращает время работы, но не заменяет вас.</div>
                     </div>
                 `;
                 appendMessage('teacher', mainContent);
@@ -532,9 +532,9 @@
                 const quizContent = `
                     <p><strong>Давайте закрепим материал: Какую задачу можно безопасно делегировать ИИ в самом начале?</strong></p>
                     <div class="quiz-container">
-                        <button class="quiz-btn" onclick="checkAnswer(this, 'A')">А. Подготовить гидравлику для экспертизы</button>
-                        <button class="quiz-btn" onclick="checkAnswer(this, 'B')">Б. Рассчитать нагрузки по СП</button>
-                        <button class="quiz-btn" onclick="checkAnswer(this, 'C')">В. Подготовить черновик протокола совещания из заметок</button>
+                        <button class="quiz-btn" onclick="checkAnswer(this, 'A')">Подготовить гидравлику для экспертизы</button>
+                        <button class="quiz-btn" onclick="checkAnswer(this, 'B')">Рассчитать нагрузки по СП</button>
+                        <button class="quiz-btn" onclick="checkAnswer(this, 'C')">Подготовить черновик протокола совещания из заметок</button>
                     </div>
                 `;
                 appendMessage('teacher', quizContent);
