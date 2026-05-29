@@ -495,13 +495,13 @@
                 
                 currentState = 1;
                 setTimeout(() => {
-                    prepareNextStudentAction("Давайте!");
+                    prepareNextStudentAction("Давайте! Как мне поможет ИИ?");
                 }, 800);
             }, 1500);
         } 
         else if (currentState === 1) {
             resetInputArea();
-            appendMessage('student', 'Давайте!');
+            appendMessage('student', 'Давайте! Как мне поможет ИИ?');
             
             setTimeout(() => { showTypingIndicator(); }, 800);
 
