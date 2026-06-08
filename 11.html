@@ -97,6 +97,29 @@
             }
         }
 
+        /* Стили для кнопки скачивания */
+        .download-btn {
+            display: block;
+            max-width: 250px;
+            margin: 40px auto 10px;
+            padding: 15px 25px;
+            background-color: #2980b9;
+            color: #ffffff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(41, 128, 185, 0.2);
+        }
+
+        .download-btn:hover {
+            background-color: #1c5980;
+            box-shadow: 0 6px 12px rgba(41, 128, 185, 0.3);
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 1.5rem;
@@ -231,6 +254,11 @@
                 <div class="content">Да. Вы вправе использовать ежегодный трудовой отпуск непосредственно перед отпуском по беременности и родам либо сразу после его окончания.</div>
             </details>
         </div>
+
+        <a href="Памятка_по_отпускам.pdf" download="Памятка_по_отпускам.pdf" class="download-btn">
+            Скачать в PDF
+        </a>
+
     </div>
 
 </body>
