@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Семинары по оптимизации</title>
+<style>
+    :root {
+        --primary-color: #318292; /* Цвет кнопок и карточек под стиль схемы */
+        --primary-dark: #236370;
+        --secondary-color: #2E5BFF;
+        --bg-color: #F8FAFC;
+        --card-bg: #FFFFFF;
+        --text-main: #1E293B;
+        --border-color: #CBD5E1;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background-color: var(--card-bg);
+        color: var(--text-main);
+        padding: 16px;
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .widget-container {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    h3 { margin: 0 0 8px 0; font-size: 18px; color: #0F172A; }
+    p.instruction { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+    .section-divider { border-top: 2px dashed var(--border-color); margin: 40px 0; }
+
+    /* ================= ЗАДАНИЕ 1 ================= */
+    .pool {
+        background: var(--bg-color);
+        border: 2px dashed #94A3B8;
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 60px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 24px;
+        justify-content: center;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+        .board { grid-template-columns: 1fr; }
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        background: var(--bg-color);
+        overflow: hidden;
+    }
+
+    .column-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px;
+        font-weight: 600;
+        font-size: 15px;
+        text-align: center;
+        position: relative;
+    }
+    
+    /* Декоративная стрелочка как на картинке */
+    .column-header::after {
+        content: '';
+        position: absolute;
+        right: -10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-top: 15px solid transparent;
+        border-bottom: 15px solid transparent;
+        border-left: 10px solid var(--primary-color);
+        z-index: 2;
+    }
+    .column:last-child .column-header::after { display: none; }
+
+    @media (max-width: 768px) {
+        .column-header::after {
+            right: 50%;
+            top: auto;
+            bottom: -15px;
+            transform: translateX(50%);
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 10px solid var(--primary-color);
+            border-bottom: none;
+        }
+    }
+
+    .dropzone {
+        flex-grow: 1;
+        min-height: 150px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+    .dropzone.drag-over { background: #E2E8F0; }
+
+    /* ================= ЗАДАНИЕ 2 ================= */
+    .sequence-container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: var(--bg-color);
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 24px;
+        min-height: 80px;
+    }
+
+    @media (max-width: 600px) {
+        .sequence-container {
+            flex-direction: column;
+        }
+    }
+
+    .seq-item {
+        background: var(--card-bg);
+        border: 2px solid var(--secondary-color);
+        color: #1E293B;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 150px;
+        position: relative;
+    }
+    .seq-item.dragging { opacity: 0.5; }
+    .seq-item.selected { background: #E0E7FF; box-shadow: 0 0 0 3px rgba(46, 91, 255, 0.3); }
+
+    .arrow {
+        color: var(--border-color);
+        font-size: 24px;
+        font-weight: bold;
+    }
+    @media (max-width: 600px) {
+        .arrow { transform: rotate(90deg); }
+    }
+
+    /* ================= ОБЩИЕ СТИЛИ КАРТОЧЕК И КНОПОК ================= */
+    .card {
+        background: var(--card-bg);
+        border: 1px solid #CBD5E1;
+        color: #334155;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+    }
+    .card:hover { border-color: var(--primary-color); transform: translateY(-1px); }
+    .card.dragging { opacity: 0.5; }
+    .card.selected { border-color: var(--primary-color); background: #F0F9FA; box-shadow: 0 0 0 2px rgba(49, 130, 146, 0.2); }
+    .dropzone .card { width: 100%; box-sizing: border-box; }
+
+    button {
+        display: block;
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    button:hover { background: var(--primary-dark); }
+
+    .feedback {
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+    }
+    .feedback.success { display: block; background: #D1FAE5; color: #065F46; border: 1px solid #34D399; }
+    .feedback.error { display: block; background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    
+    <!-- ЗАДАНИЕ 1 -->
+    <h3>Задание 1. Определение показателей качества</h3>
+    <p class="instruction">Распределите задачи по стадиям процесса определения параметров проектируемого объекта. (Перетаскивайте или кликайте).</p>
+
+    <div class="pool dropzone" id="pool"></div>
+
+    <div class="board">
+        <div class="column">
+            <div class="column-header">До семинара</div>
+            <div class="dropzone" id="dz-before" data-phase="before"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">Семинар</div>
+            <div class="dropzone" id="dz-during" data-phase="during"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">После семинара</div>
+            <div class="dropzone" id="dz-after" data-phase="after"></div>
+        </div>
+    </div>
+
+    <button id="check-btn-1">Проверить Задание 1</button>
+    <div id="feedback-1" class="feedback"></div>
+
+    <div class="section-divider"></div>
+
+    <!-- ЗАДАНИЕ 2 -->
+    <h3>Задание 2. Последовательность семинаров</h3>
+    <p class="instruction">В какой последовательности реализуются семинары по оптимизации объекта? (Перетаскивайте карточки для изменения порядка или кликайте на две карточки, чтобы поменять их местами).</p>
+
+    <div class="sequence-container" id="sequence-container">
+        <!-- Генерируется через JS -->
+    </div>
+
+    <button id="check-btn-2">Проверить Задание 2</button>
+    <div id="feedback-2" class="feedback"></div>
+
+</div>
+
+<script>
+    // --- ДАННЫЕ ЗАДАНИЯ 1 ---
+    const task1Data = [
+        { id: "1.1", text: "Планирование", phase: "before" },
+        { id: "1.2", text: "Определение команды", phase: "before" },
+        { id: "1.3", text: "Рассмотрение подготовительных материалов", phase: "before" },
+        
+        { id: "2.1", text: "Изучение параметров", phase: "during" },
+        { id: "2.2", text: "Приоритезация задач проекта", phase: "during" },
+        { id: "2.3", text: "Оценка классов качества", phase: "during" },
+        { id: "2.4", text: "Определение средних значений классов", phase: "during" },
+        { id: "2.5", text: "Презентация результатов", phase: "during" },
+        
+        { id: "3.1", text: "Отчет по результатам", phase: "after" },
+        { id: "3.2", text: "Утверждение отчета ЛПР", phase: "after" },
+        { id: "3.3", text: "План действий", phase: "after" },
+        { id: "3.4", text: "Последующие мероприятия", phase: "after" }
+    ];
+
+    // --- ДАННЫЕ ЗАДАНИЯ 2 ---
+    const task2Data = [
+        { id: "s1", text: "Определение классов качества", order: 1 },
+        { id: "s2", text: "Выбор тех.решений", order: 2 },
+        { id: "s3", text: "Функционально-стоимостной анализ", order: 3 }
+    ];
+
+    let selectedCard1 = null;
+    let selectedCard2 = null; // Для свапа во втором задании
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
+    function init() {
+        // Инит Задания 1
+        const pool = document.getElementById('pool');
+        shuffle([...task1Data]).forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card task1-card';
+            card.setAttribute('draggable', 'true');
+            card.dataset.phase = item.phase;
+            card.innerHTML = `<span>${item.text}</span>`;
+            pool.appendChild(card);
+        });
+
+        // Инит Задания 2
+        const seqContainer = document.getElementById('sequence-container');
+        const shuffledSeq = shuffle([...task2Data]);
+        
+        shuffledSeq.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'seq-item';
+            card.setAttribute('draggable', 'true');
+            card.dataset.id = item.id;
+            card.textContent = item.text;
+            seqContainer.appendChild(card);
+
+            if (index < shuffledSeq.length - 1) {
+                const arrow = document.createElement('div');
+                arrow.className = 'arrow';
+                arrow.innerHTML = '&#8594;';
+                seqContainer.appendChild(arrow);
+            }
+        });
+
+        setupTask1Interactions();
+        setupTask2Interactions();
+    }
+
+    // --- ВЗАИМОДЕЙСТВИЯ ЗАДАНИЯ 1 ---
+    function setupTask1Interactions() {
+        const cards = document.querySelectorAll('.task1-card');
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard1 === card) {
+                    card.classList.remove('selected');
+                    selectedCard1 = null;
+                } else {
+                    if (selectedCard1) selectedCard1.classList.remove('selected');
+                    selectedCard1 = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+                if (selectedCard1) { selectedCard1.classList.remove('selected'); selectedCard1 = null; }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', () => {
+                if (selectedCard1) {
+                    zone.appendChild(selectedCard1);
+                    selectedCard1.classList.remove('selected');
+                    selectedCard1 = null;
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const draggable = document.querySelector('.task1-card.dragging');
+                if (draggable) zone.appendChild(draggable);
+            });
+        });
+    }
+
+    // --- ВЗАИМОДЕЙСТВИЯ ЗАДАНИЯ 2 ---
+    function setupTask2Interactions() {
+        const seqContainer = document.getElementById('sequence-container');
+        
+        seqContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('.seq-item');
+            if (!card) return;
+
+            if (selectedCard2 === card) {
+                card.classList.remove('selected');
+                selectedCard2 = null;
+            } else if (selectedCard2) {
+                // Выполняем обмен (swap) элементов DOM
+                const sibling1 = selectedCard2.nextSibling;
+                const parent = card.parentNode;
+                
+                // Вставляем первую карточку перед второй
+                parent.insertBefore(selectedCard2, card);
+                // Вставляем вторую карточку на старое место первой
+                if(sibling1) parent.insertBefore(card, sibling1);
+                else parent.appendChild(card);
+                
+                selectedCard2.classList.remove('selected');
+                selectedCard2 = null;
+            } else {
+                selectedCard2 = card;
+                card.classList.add('selected');
+            }
+        });
+
+        // Простая поддержка перетаскивания (обмен местами при дропе)
+        seqContainer.addEventListener('dragstart', (e) => {
+            if(e.target.classList.contains('seq-item')) {
+                e.target.classList.add('dragging');
+            }
+        });
+
+        seqContainer.addEventListener('dragend', (e) => {
+            if(e.target.classList.contains('seq-item')) {
+                e.target.classList.remove('dragging');
+            }
+        });
+
+        seqContainer.addEventListener('dragover', (e) => e.preventDefault());
+
+        seqContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggable = document.querySelector('.seq-item.dragging');
+            const target = e.target.closest('.seq-item');
+            
+            if (draggable && target && draggable !== target) {
+                const sibling1 = draggable.nextSibling;
+                const parent = target.parentNode;
+                parent.insertBefore(draggable, target);
+                if(sibling1) parent.insertBefore(target, sibling1);
+                else parent.appendChild(target);
+            }
+        });
+    }
+
+    // --- ПРОВЕРКИ ---
+    document.getElementById('check-btn-1').addEventListener('click', () => {
+        const pool = document.getElementById('pool');
+        const feedback = document.getElementById('feedback-1');
+        
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Сначала распределите все карточки по колонкам.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        document.querySelectorAll('.column .dropzone').forEach(zone => {
+            const targetPhase = zone.dataset.phase;
+            zone.querySelectorAll('.task1-card').forEach(card => {
+                if (card.dataset.phase !== targetPhase) isCorrect = false;
+            });
+        });
+
+        if (isCorrect) {
+            feedback.innerHTML = '<strong>Верно!</strong> Этапы подготовки и проведения семинара выстроены правильно.';
+            feedback.className = 'feedback success';
+            document.getElementById('check-btn-1').style.display = 'none';
+            document.querySelectorAll('.task1-card').forEach(c => { c.removeAttribute('draggable'); c.style.cursor = 'default'; });
+        } else {
+            feedback.innerHTML = '<strong>Ошибка.</strong> Некоторые задачи находятся не на своем этапе. Проверьте логику процесса.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    document.getElementById('check-btn-2').addEventListener('click', () => {
+        const feedback = document.getElementById('feedback-2');
+        const currentOrder = [...document.querySelectorAll('.seq-item')].map(el => el.dataset.id);
+        
+        // Правильный порядок id: s1, s2, s3
+        if (currentOrder[0] === 's1' && currentOrder[1] === 's2' && currentOrder[2] === 's3') {
+            feedback.innerHTML = '<strong>Отлично!</strong> Это правильная логическая цепочка оптимизации: от базовых классов качества к конкретным техническим решениям и их стоимостному анализу.';
+            feedback.className = 'feedback success';
+            document.getElementById('check-btn-2').style.display = 'none';
+            document.querySelectorAll('.seq-item').forEach(c => { c.removeAttribute('draggable'); c.style.cursor = 'default'; });
+        } else {
+            feedback.innerHTML = '<strong>Ошибка.</strong> Вспомните, что анализ стоимости проводится после того, как выбраны технические решения.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
