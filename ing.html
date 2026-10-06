@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Декомпозиция и риски</title>
+<style>
+    :root {
+        --primary-color: #2E5BFF;
+        --bg-color: #F4F6F8;
+        --card-bg: #FFFFFF;
+        --text-main: #1C1C1E;
+        --text-muted: #8E8E93;
+        --success: #34C759;
+        --error: #FF3B30;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        line-height: 1.5;
+        padding: 20px;
+    }
+
+    .widget-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    h3 {
+        margin-top: 0;
+        font-size: 18px;
+    }
+
+    p.instruction {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .sortable-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px 0;
+    }
+
+    .sortable-item {
+        display: flex;
+        align-items: center;
+        background: #F9FAFB;
+        border: 1px solid #E5E7EB;
+        margin-bottom: 8px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: grab;
+        transition: transform 0.2s, box-shadow 0.2s;
+        font-size: 14px;
+    }
+
+    .sortable-item:active {
+        cursor: grabbing;
+    }
+
+    .sortable-item.dragging {
+        opacity: 0.5;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        transform: scale(1.02);
+    }
+
+    .drag-handle {
+        margin-right: 12px;
+        color: #9CA3AF;
+        font-size: 18px;
+        user-select: none;
+    }
+
+    .confidence-badge {
+        margin-left: auto;
+        background: #E0E7FF;
+        color: #3730A3;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    button {
+        display: block;
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    button:hover {
+        background: #1C44D6;
+    }
+
+    .feedback {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-align: center;
+        display: none;
+    }
+
+    .feedback.success {
+        display: block;
+        background: #E8F5E9;
+        color: #2E7D32;
+    }
+
+    .feedback.error {
+        display: block;
+        background: #FFEBEE;
+        color: #C62828;
+    }
+
+    /* Step 2 Styles */
+    #step-2 {
+        display: none;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px dashed #E5E7EB;
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 20px;
+        margin-top: 16px;
+    }
+
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+    }
+    
+    input[type="radio"] {
+        width: 18px;
+        height: 18px;
+    }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Шаг 1. Восстановите цепочку проектирования</h3>
+    <p class="instruction">Расположите карточки в правильной хронологической последовательности — от базовой схемы до итогового раздела металлических конструкций (КМ). Перетаскивайте элементы за иконку слева.</p>
+    
+    <ul class="sortable-list" id="sortable-list">
+        <!-- Карточки генерируются через JS -->
+    </ul>
+
+    <button id="check-btn">Проверить последовательность</button>
+    <div id="feedback-msg" class="feedback"></div>
+
+    <div id="step-2">
+        <h3>Шаг 2. Примите управленческое решение</h3>
+        <p class="instruction">Проект срочный, есть распоряжение руководства начинать закупку и стройку опережающими темпами. Регламент допускает выдачу документации в работу, если средний балл уверенности по всей цепочке заданий <strong>превышает 3</strong>.</p>
+        <p>Рассчитайте среднюю уверенность на основе данных из карточек. Стоит ли отдавать раздел КМ в закупку металла и на монтаж?</p>
+        
+        <div class="radio-group">
+            <label class="radio-label">
+                <input type="radio" name="decision" value="yes"> Да
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="decision" value="no"> Нет
+            </label>
+        </div>
+        <div id="step-2-feedback" class="feedback" style="margin-top: 16px;"></div>
+    </div>
+</div>
+
+<script>
+    // Исходные правильные данные
+    const correctOrder = [
+        { id: 1, text: "Монтажно-технологическая схема", conf: null },
+        { id: 2, text: "Задание на компоновку", conf: 3 },
+        { id: 3, text: "Компоновочное решение", conf: null },
+        { id: 4, text: "Задание архитекторам", conf: 4 },
+        { id: 5, text: "Предварительная архитектура", conf: null },
+        { id: 6, text: "Задание от архитекторов электрикам, киповцам и др.", conf: 3 },
+        { id: 7, text: "Разработка разделов по инженерным сетям", conf: null },
+        { id: 8, text: "Задания на нагрузки от инженерных сетей конструкторам", conf: 4 },
+        { id: 9, text: "Разработка раздела «Конструкции металлические» (КМ)", conf: null }
+    ];
+
+    const list = document.getElementById('sortable-list');
+    const checkBtn = document.getElementById('check-btn');
+    const feedbackMsg = document.getElementById('feedback-msg');
+    const step2 = document.getElementById('step-2');
+    const radios = document.querySelectorAll('input[name="decision"]');
+    const step2Feedback = document.getElementById('step-2-feedback');
+
+    // Функция перемешивания массива (Фишер-Йетс)
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // Инициализация виджета
+    function init() {
+        const shuffled = shuffle([...correctOrder]);
+        
+        shuffled.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'sortable-item';
+            li.setAttribute('draggable', 'true');
+            li.dataset.id = item.id;
+            
+            let badge = item.conf ? `<span class="confidence-badge">Уверенность: ${item.conf}</span>` : '';
+            
+            li.innerHTML = `
+                <span class="drag-handle">☰</span>
+                <span class="item-text">${item.text}</span>
+                ${badge}
+            `;
+            list.appendChild(li);
+        });
+
+        addDragAndDropHandlers();
+    }
+
+    // Логика Drag and Drop
+    function addDragAndDropHandlers() {
+        const items = document.querySelectorAll('.sortable-item');
+        
+        items.forEach(item => {
+            item.addEventListener('dragstart', () => {
+                setTimeout(() => item.classList.add('dragging'), 0);
+            });
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging');
+            });
+        });
+
+        list.addEventListener('dragover', initSortableList);
+        list.addEventListener('dragenter', e => e.preventDefault());
+    }
+
+    const initSortableList = (e) => {
+        e.preventDefault();
+        const draggingItem = document.querySelector('.dragging');
+        // Находим все элементы, кроме того, который перетаскиваем
+        let siblings = [...list.querySelectorAll('.sortable-item:not(.dragging)')];
+
+        // Находим элемент, после которого нужно вставить перетаскиваемый
+        let nextSibling = siblings.find(sibling => {
+            return e.clientY <= sibling.offsetTop + sibling.offsetHeight / 2;
+        });
+
+        list.insertBefore(draggingItem, nextSibling);
+    }
+
+    // Проверка правильности
+    checkBtn.addEventListener('click', () => {
+        const currentItems = [...list.querySelectorAll('.sortable-item')];
+        let isCorrect = true;
+
+        currentItems.forEach((item, index) => {
+            if (parseInt(item.dataset.id) !== correctOrder[index].id) {
+                isCorrect = false;
+            }
+        });
+
+        if (isCorrect) {
+            feedbackMsg.textContent = 'Отлично! Последовательность выстроена верно.';
+            feedbackMsg.className = 'feedback success';
+            checkBtn.style.display = 'none'; // Скрываем кнопку проверки
+            
+            // Запрещаем дальнейшее перетаскивание
+            currentItems.forEach(item => {
+                item.removeAttribute('draggable');
+                item.querySelector('.drag-handle').style.opacity = '0.3';
+                item.style.cursor = 'default';
+            });
+
+            // Показываем второй шаг
+            step2.style.display = 'block';
+        } else {
+            feedbackMsg.textContent = 'Порядок неверный. Попробуйте еще раз.';
+            feedbackMsg.className = 'feedback error';
+        }
+    });
+
+    // Проверка второго шага
+    radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'yes') {
+                step2Feedback.textContent = 'Верно! Средняя уверенность равна 3.5 ((3+4+3+4)/4). Это больше 3, поэтому мы можем отдавать чертежи в работу, принимая оправданный риск для ускорения стройки.';
+                step2Feedback.className = 'feedback success';
+            } else {
+                step2Feedback.textContent = 'Ошибка. Посчитайте среднее арифметическое всех оценок уверенности. Если оно больше 3, решение должно быть положительным.';
+                step2Feedback.className = 'feedback error';
+            }
+        });
+    });
+
+    init();
+</script>
+</body>
+</html>
