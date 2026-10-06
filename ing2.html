@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Дорожки выученных уроков</title>
+<style>
+    :root {
+        --primary-color: #2E5BFF;
+        --bg-color: #F4F6F8;
+        --card-bg: #FFFFFF;
+        --text-main: #1C1C1E;
+        --text-muted: #6B7280;
+        
+        /* Цвета дорожек на основе схемы */
+        --lane-control: #FFE4E6;   /* Светло-розовый */
+        --lane-manage: #FECACA;    /* Светло-красный */
+        --lane-execute: #FCA5A5;   /* Коралловый */
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        padding: 20px;
+        line-height: 1.5;
+    }
+
+    .widget-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    h3 { margin-top: 0; font-size: 18px; }
+    .instruction { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+
+    /* Банк карточек (Pool) */
+    .pool {
+        background: #F9FAFB;
+        border: 2px dashed #D1D5DB;
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 60px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+        transition: background 0.2s;
+    }
+    .pool:hover { background: #F3F4F6; }
+
+    /* Структура дорожек (Swimlanes) */
+    .swimlanes-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .lane {
+        display: flex;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #E5E7EB;
+        background: #FAFAFA;
+        min-height: 90px;
+    }
+
+    .lane-title {
+        width: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+        padding: 10px;
+        flex-shrink: 0;
+        border-right: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .lane[data-lane="control"] .lane-title { background-color: var(--lane-control); }
+    .lane[data-lane="management"] .lane-title { background-color: var(--lane-manage); }
+    .lane[data-lane="execution"] .lane-title { background-color: var(--lane-execute); }
+
+    .lane-content {
+        flex-grow: 1;
+        padding: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-content: flex-start;
+    }
+
+    /* Карточки */
+    .card {
+        background: #FFFFFF;
+        border: 1px solid #D1D5DB;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        user-select: none;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+    }
+
+    .card:hover { border-color: var(--primary-color); }
+    .card:active { cursor: grabbing; }
+    
+    .card.dragging {
+        opacity: 0.4;
+        transform: scale(0.98);
+    }
+    
+    .card.selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(46, 91, 255, 0.2);
+        background: #F0F4FF;
+    }
+
+    /* Кнопка и статусы */
+    button {
+        display: block;
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    button:hover { background: #1C44D6; }
+
+    .feedback {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-align: center;
+        display: none;
+    }
+    .feedback.success { display: block; background: #E8F5E9; color: #2E7D32; }
+    .feedback.error { display: block; background: #FFEBEE; color: #C62828; }
+
+    /* Адаптив для узких экранов */
+    @media (max-width: 600px) {
+        .lane { flex-direction: column; }
+        .lane-title { width: 100%; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 6px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Задание: Расставьте этапы работы с выученными уроками по правильным дорожкам ответственности в хронологическом порядке (слева направо).</h3>
+    <p class="instruction"> Как управлять:</strong> перетаскивайте карточки мышью ИЛИ кликните по карточке, а затем кликните по нужной дорожке.</p>
+    
+    <!-- Банк карточек -->
+    <div class="pool" id="pool">
+        <!-- Карточки генерируются через JS -->
+    </div>
+
+    <!-- Дорожки (согласно схеме снизу вверх: Реализация -> Управление -> Контроль, но визуально Контроль наверху) -->
+    <div class="swimlanes-container">
+        
+        <div class="lane" data-lane="control">
+            <div class="lane-title">Контроль</div>
+            <div class="lane-content dropzone" id="lane-control"></div>
+        </div>
+
+        <div class="lane" data-lane="management">
+            <div class="lane-title">Управление</div>
+            <div class="lane-content dropzone" id="lane-management"></div>
+        </div>
+
+        <div class="lane" data-lane="execution">
+            <div class="lane-title">Реализация</div>
+            <div class="lane-content dropzone" id="lane-execution"></div>
+        </div>
+
+    </div>
+
+    <button id="check-btn">Проверить решение</button>
+    <div id="feedback-msg" class="feedback"></div>
+</div>
+
+<script>
+    // Исходные данные: текст, правильная дорожка и правильный порядковый номер внутри этой дорожки
+    const correctMapping = [
+        { id: 1, text: "Проверка технического решения", target: "lane-management", order: 1 },
+        { id: 2, text: "Фиксация ошибки", target: "lane-management", order: 2 },
+        { id: 3, text: "Анализ ошибки", target: "lane-management", order: 3 },
+        { id: 4, text: "Разработка корректирующего действия", target: "lane-execution", order: 1 },
+        { id: 5, text: "Внедрение корректирующих действий", target: "lane-execution", order: 2 },
+        { id: 6, text: "Контроль за повторяемостью ошибки", target: "lane-control", order: 1 }
+    ];
+
+    const pool = document.getElementById('pool');
+    const checkBtn = document.getElementById('check-btn');
+    const feedbackMsg = document.getElementById('feedback-msg');
+    let selectedCard = null;
+
+    // Перемешивание массива
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // Инициализация виджета
+    function init() {
+        const shuffled = shuffle([...correctMapping]);
+        
+        shuffled.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.setAttribute('draggable', 'true');
+            div.dataset.id = item.id;
+            div.textContent = item.text;
+            pool.appendChild(div);
+        });
+
+        setupInteractions();
+    }
+
+    // Настройка Drag&Drop и Click-to-Move
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone, .pool');
+
+        // Логика кликов (Click-to-Move для мобильных)
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation(); // Предотвращаем клик по зоне
+                if (selectedCard === card) {
+                    // Отмена выбора при повторном клике
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            // Логика Drag&Drop (Для десктопа)
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+                if (selectedCard) {
+                    selectedCard.classList.remove('selected');
+                    selectedCard = null;
+                }
+            });
+            
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+        });
+
+        // Обработка зон (куда кидаем/кликаем)
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', () => {
+                if (selectedCard) {
+                    zone.appendChild(selectedCard);
+                    selectedCard.classList.remove('selected');
+                    selectedCard = null;
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(zone, e.clientX);
+                const draggable = document.querySelector('.dragging');
+                if (draggable) {
+                    if (afterElement == null) {
+                        zone.appendChild(draggable);
+                    } else {
+                        zone.insertBefore(draggable, afterElement);
+                    }
+                }
+            });
+        });
+    }
+
+    // Определение позиции при перетаскивании (горизонтальная сортировка)
+    function getDragAfterElement(container, x) {
+        const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            // Находим центр карточки по X
+            const offset = x - box.left - box.width / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Проверка решения
+    checkBtn.addEventListener('click', () => {
+        // Если в пуле остались карточки
+        if (pool.children.length > 0) {
+            feedbackMsg.textContent = 'Распределите все карточки по дорожкам перед проверкой.';
+            feedbackMsg.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+
+        // Проверяем каждую зону
+        ['lane-control', 'lane-management', 'lane-execution'].forEach(zoneId => {
+            const zoneCards = [...document.getElementById(zoneId).querySelectorAll('.card')];
+            const expectedCards = correctMapping
+                .filter(c => c.target === zoneId)
+                .sort((a, b) => a.order - b.order);
+
+            // Совпадает ли количество
+            if (zoneCards.length !== expectedCards.length) {
+                isCorrect = false;
+                return;
+            }
+
+            // Совпадает ли порядок внутри дорожки
+            zoneCards.forEach((card, index) => {
+                if (parseInt(card.dataset.id) !== expectedCards[index].id) {
+                    isCorrect = false;
+                }
+            });
+        });
+
+        if (isCorrect) {
+            feedbackMsg.textContent = 'Верно! Вы отлично усвоили механику распределения этапов по уровням управления.';
+            feedbackMsg.className = 'feedback success';
+            checkBtn.style.display = 'none'; // Скрываем кнопку
+            
+            // Блокируем карточки
+            document.querySelectorAll('.card').forEach(card => {
+                card.removeAttribute('draggable');
+                card.style.cursor = 'default';
+                // Снимаем обработчик клика через клон
+                const clone = card.cloneNode(true);
+                card.parentNode.replaceChild(clone, card);
+            });
+        } else {
+            feedbackMsg.textContent = 'Ошибка в распределении или хронологии. Попробуйте еще раз.';
+            feedbackMsg.className = 'feedback error';
+        }
+    });
+
+    // Запуск
+    init();
+</script>
+</body>
+</html>
