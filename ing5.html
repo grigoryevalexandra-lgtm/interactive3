@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Сборка WBS (Ультракомпактный)</title>
+<style>
+    :root {
+        --primary-color: #2E5BFF;
+        --bg-color: #F8FAFC;
+        --card-bg: #FFFFFF;
+        --text-main: #1E293B;
+        --border-color: #94A3B8;
+        --success: #10B981;
+        --error: #EF4444;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background-color: var(--card-bg);
+        color: var(--text-main);
+        padding: 8px;
+        margin: 0;
+        overflow-x: hidden;
+    }
+
+    .widget-container {
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    h3 { margin: 0 0 2px 0; font-size: 15px; }
+    p.instruction { color: #64748b; font-size: 11px; margin-bottom: 10px; line-height: 1.2; }
+
+    /* Пул карточек */
+    .pool {
+        background: var(--bg-color);
+        border: 1px dashed var(--border-color);
+        border-radius: 6px;
+        padding: 6px;
+        min-height: 36px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 12px;
+        justify-content: center;
+    }
+
+    /* Карточки */
+    .card {
+        background: var(--card-bg);
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 9px;
+        line-height: 1;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: all 0.1s;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .pool .card { max-width: 90px; }
+    .card:hover { background: #EEF2FF; }
+    .card.dragging { opacity: 0.5; }
+    .card.selected { background: #E0E7FF; border-width: 1px; box-shadow: 0 0 0 2px rgba(46, 91, 255, 0.3); }
+
+    /* Контейнер дерева */
+    .tree-wrapper {
+        width: 100%;
+        padding: 0;
+        margin-bottom: 12px;
+        box-sizing: border-box;
+    }
+
+    /* Ультракомпактное дерево WBS */
+    .tree {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .tree ul {
+        display: flex;
+        width: 100%;
+        padding-top: 8px; /* Сильно уменьшили отступ сверху */
+        position: relative;
+        margin: 0;
+        padding-left: 0;
+        justify-content: center;
+    }
+
+    .tree li {
+        flex: 1; 
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        padding: 8px 1px 0 1px; /* Сильно уменьшили внутренний отступ */
+        list-style-type: none;
+        min-width: 0; 
+    }
+
+    /* Короткие линии связи */
+    .tree li::before, .tree li::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 50%;
+        border-top: 1px solid var(--border-color);
+        width: 50%; height: 8px; /* Укоротили линии */
+    }
+    .tree li::after {
+        right: auto; left: 50%;
+        border-left: 1px solid var(--border-color);
+    }
+    .tree li:only-child::after, .tree li:only-child::before { display: none; }
+    .tree li:only-child { padding-top: 0; }
+    .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+    .tree li:last-child::before {
+        border-right: 1px solid var(--border-color);
+        border-radius: 0 2px 0 0;
+    }
+    .tree li:first-child::after {
+        border-radius: 2px 0 0 0;
+    }
+    .tree ul::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 50%;
+        border-left: 1px solid var(--border-color);
+        width: 0; height: 8px; /* Укоротили линии */
+        transform: translateX(-50%);
+    }
+
+    /* Статичные узлы и плоские зоны сброса */
+    .node-static {
+        background: #F1F5F9;
+        border: 1px solid var(--border-color);
+        padding: 4px 8px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 2;
+        margin-bottom: 0px;
+    }
+
+    .dropzone {
+        width: 98%;
+        max-width: 72px; 
+        height: 24px; /* Очень плоская высота */
+        border: 1px dashed var(--border-color);
+        border-radius: 3px;
+        background: var(--bg-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+        z-index: 2;
+        box-sizing: border-box;
+    }
+
+    .dropzone.drag-over { background: #E0E7FF; border-color: var(--primary-color); }
+    
+    .dropzone .card {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 1px;
+        border: 1px solid var(--primary-color);
+        box-shadow: none;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+
+    /* Кнопки */
+    button {
+        display: block;
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    button:hover { background: #1C44D6; }
+
+    .feedback {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 12px;
+        text-align: center;
+        display: none;
+    }
+    .feedback.success { display: block; background: #D1FAE5; color: #065F46; }
+    .feedback.error { display: block; background: #FEE2E2; color: #991B1B; }
+
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Соберите структуру (WBS)</h3>
+    <p class="instruction">
+        Используйте логику кодирования WBS (задачи 1.1 и 1.2 относятся к 1-й операции). Управление: перетаскивайте мышью или кликайте.
+    </p>
+
+    <!-- Пул карточек -->
+    <div class="pool" id="pool"></div>
+
+    <!-- Резиновое дерево WBS -->
+    <div class="tree-wrapper">
+        <div class="tree">
+            <ul>
+                <li>
+                    <div class="node-static">НАЗВАНИЕ ПРОЕКТА</div>
+                    <ul>
+                        <li>
+                            <div class="dropzone" data-id="1"></div>
+                            <ul>
+                                <li>
+                                    <div class="dropzone" data-id="1.1"></div>
+                                    <ul>
+                                        <li><div class="dropzone" data-id="1.1.1"></div></li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <div class="dropzone" data-id="1.2"></div>
+                                    <ul>
+                                        <li><div class="dropzone" data-id="1.2.1"></div></li>
+                                        <li><div class="dropzone" data-id="1.2.2"></div></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <div class="dropzone" data-id="2"></div>
+                            <ul>
+                                <li>
+                                    <div class="dropzone" data-id="2.1"></div>
+                                    <ul>
+                                        <li><div class="dropzone" data-id="2.1.1"></div></li>
+                                        <li><div class="dropzone" data-id="2.1.2"></div></li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <div class="dropzone" data-id="2.2"></div>
+                                    <ul>
+                                        <li><div class="dropzone" data-id="2.2.1"></div></li>
+                                        <li><div class="dropzone" data-id="2.2.2"></div></li>
+                                        <li><div class="dropzone" data-id="2.2.3"></div></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <div class="dropzone" data-id="3"></div>
+                            <ul>
+                                <li>
+                                    <div class="dropzone" data-id="3.1"></div>
+                                    <ul>
+                                        <li><div class="dropzone" data-id="3.1.1"></div></li>
+                                        <li><div class="dropzone" data-id="3.1.2"></div></li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <div class="dropzone" data-id="3.2"></div>
+                                    <ul>
+                                        <li><div class="dropzone" data-id="3.2.1"></div></li>
+                                        <li><div class="dropzone" data-id="3.2.2"></div></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <button id="check-btn">Проверить структуру</button>
+    <div id="feedback" class="feedback"></div>
+</div>
+
+<script>
+    const wbsData = [
+        { id: "1", text: "1 Операция" }, { id: "2", text: "2 Операция" }, { id: "3", text: "3 Операция" },
+        { id: "1.1", text: "1.1 Задание" }, { id: "1.2", text: "1.2 Задание" }, { id: "2.1", text: "2.1 Задание" },
+        { id: "2.2", text: "2.2 Задание" }, { id: "3.1", text: "3.1 Задание" }, { id: "3.2", text: "3.2 Задание" },
+        { id: "1.1.1", text: "1.1.1 Под-задание" }, { id: "1.2.1", text: "1.2.1 Под-задание" }, { id: "1.2.2", text: "1.2.2 Под-задание" },
+        { id: "2.1.1", text: "2.1.1 Под-задание" }, { id: "2.1.2", text: "2.1.2 Под-задание" }, { id: "2.2.1", text: "2.2.1 Под-задание" },
+        { id: "2.2.2", text: "2.2.2 Под-задание" }, { id: "2.2.3", text: "2.2.3 Под-задание" }, { id: "3.1.1", text: "3.1.1 Под-задание" }, 
+        { id: "3.1.2", text: "3.1.2 Под-задание" }, { id: "3.2.1", text: "3.2.1 Под-задание" }, { id: "3.2.2", text: "3.2.2 Под-задание" }
+    ];
+
+    let selectedCard = null;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        const pool = document.getElementById('pool');
+        shuffle([...wbsData]).forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('draggable', 'true');
+            card.dataset.id = item.id;
+            card.textContent = item.text;
+            pool.appendChild(card);
+        });
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone, .pool');
+
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+                if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', () => {
+                if (selectedCard) {
+                    if (zone.classList.contains('dropzone')) {
+                        if (zone.children.length > 0) document.getElementById('pool').appendChild(zone.children[0]);
+                        zone.innerHTML = '';
+                    }
+                    zone.appendChild(selectedCard);
+                    selectedCard.classList.remove('selected');
+                    selectedCard = null;
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); if (zone.classList.contains('dropzone')) zone.classList.add('drag-over'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const draggable = document.querySelector('.dragging');
+                if (draggable) {
+                    if (zone.classList.contains('dropzone')) {
+                        if (zone.children.length > 0) document.getElementById('pool').appendChild(zone.children[0]);
+                        zone.innerHTML = '';
+                    }
+                    zone.appendChild(draggable);
+                }
+            });
+        });
+    }
+
+    document.getElementById('check-btn').addEventListener('click', () => {
+        const pool = document.getElementById('pool');
+        const feedback = document.getElementById('feedback');
+        
+        if (pool.children.length > 0) {
+            feedback.textContent = 'Пожалуйста, распределите все карточки по схеме.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        document.querySelectorAll('.dropzone').forEach(zone => {
+            const card = zone.querySelector('.card');
+            if (!card || card.dataset.id !== zone.dataset.id) isCorrect = false;
+        });
+
+        if (isCorrect) {
+            feedback.textContent = 'Отлично! Вы верно собрали иерархическую структуру.';
+            feedback.className = 'feedback success';
+            document.getElementById('check-btn').style.display = 'none';
+            document.querySelectorAll('.card').forEach(c => { c.removeAttribute('draggable'); c.style.cursor = 'default'; });
+        } else {
+            feedback.textContent = 'Есть ошибки. Проверьте соответствие нумерации задач.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
