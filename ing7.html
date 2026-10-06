@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Классификация процессов</title>
+<style>
+    :root {
+        --primary-color: #2E5BFF;
+        --bg-color: #F8FAFC;
+        --card-bg: #FFFFFF;
+        --text-main: #1E293B;
+        --border-color: #CBD5E1;
+        
+        /* Цвета категорий (на основе вашей разметки) */
+        --color-manage: #0F766E;   /* Темно-бирюзовый */
+        --color-main: #0284C7;     /* Голубой */
+        --color-support: #C026D3;  /* Пурпурный */
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background-color: var(--card-bg);
+        color: var(--text-main);
+        padding: 12px;
+        margin: 0;
+    }
+
+    .widget-container {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    h3 { margin: 0 0 8px 0; font-size: 18px; color: #0F172A; }
+    p.instruction { color: #64748b; font-size: 13px; margin-bottom: 20px; line-height: 1.4; }
+
+    /* Пул карточек */
+    .pool {
+        background: var(--bg-color);
+        border: 2px dashed #94A3B8;
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 70px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+        justify-content: center;
+    }
+
+    /* Сетка колонок */
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 700px) {
+        .board { grid-template-columns: 1fr; }
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        background: var(--bg-color);
+        overflow: hidden;
+    }
+
+    .column-header {
+        padding: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        text-align: center;
+        color: white;
+    }
+
+    .column[data-target="manage"] .column-header { background-color: var(--color-manage); }
+    .column[data-target="main"] .column-header { background-color: var(--color-main); }
+    .column[data-target="support"] .column-header { background-color: var(--color-support); }
+
+    .dropzone {
+        flex-grow: 1;
+        min-height: 120px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: background 0.2s;
+    }
+
+    .dropzone.drag-over { background: #E2E8F0; }
+
+    /* Карточки */
+    .card {
+        background: var(--card-bg);
+        border: 1px solid #E2E8F0;
+        color: #334155;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        user-select: none;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-sizing: border-box;
+        text-align: left;
+    }
+
+    .card-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .card:hover { border-color: var(--primary-color); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.08); }
+    .card.dragging { opacity: 0.5; }
+    .card.selected { 
+        border-color: var(--primary-color); 
+        background: #F0F4FF;
+        box-shadow: 0 0 0 2px rgba(46, 91, 255, 0.2); 
+    }
+
+    .dropzone .card { width: 100%; margin: 0; }
+
+    /* Кнопки */
+    button {
+        display: block;
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    button:hover { background: #1C44D6; }
+
+    .feedback {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+    }
+    .feedback.success { display: block; background: #D1FAE5; color: #065F46; border: 1px solid #34D399; }
+    .feedback.error { display: block; background: #FEE2E2; color: #991B1B; border: 1px solid #F87171; }
+
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Разделите процессы проектного института на группы</h3>
+    <p class="instruction">
+        Распределите предложенные карточки с процессами по трем функциональным блокам. Управление: перетаскивайте карточки мышью или кликните по карточке, а затем по нужной колонке.
+    </p>
+
+    <!-- Пул карточек -->
+    <div class="pool dropzone" id="pool"></div>
+
+    <!-- Доска с колонками -->
+    <div class="board">
+        <div class="column" data-target="manage">
+            <div class="column-header">Управляющие</div>
+            <div class="dropzone" id="dz-manage"></div>
+        </div>
+        <div class="column" data-target="main">
+            <div class="column-header">Основные</div>
+            <div class="dropzone" id="dz-main"></div>
+        </div>
+        <div class="column" data-target="support">
+            <div class="column-header">Вспомогательные</div>
+            <div class="dropzone" id="dz-support"></div>
+        </div>
+    </div>
+
+    <button id="check-btn">Проверить распределение</button>
+    <div id="feedback" class="feedback"></div>
+</div>
+
+<script>
+    // Исходные данные процессов (с правильными группами и иконками)
+    const processData = [
+        { id: "p1", text: "Расчет KPI по проектированию", type: "manage", icon: "📊" },
+        { id: "p2", text: "Разработка рабочей документации раздела ЭМ", type: "main", icon: "📐" },
+        { id: "p3", text: "Учет корреспонденции по проекту", type: "main", icon: "📨" },
+        { id: "p4", text: "Подготовка ТКП на ТЭО", type: "main", icon: "📝" },
+        { id: "p5", text: "Изыскания", type: "main", icon: "🔍" },
+        { id: "p6", text: "Разработка графика на проектирование", type: "main", icon: "📅" },
+        { id: "p7", text: "Ответ на рекламации и претензионная работа", type: "support", icon: "⚖️" },
+        { id: "p8", text: "Прохождение экзаменов Ростехнадзора", type: "support", icon: "🎓" }
+    ];
+
+    let selectedCard = null;
+
+    // Перемешивание массива
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        const pool = document.getElementById('pool');
+        shuffle([...processData]).forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('draggable', 'true');
+            card.dataset.type = item.type;
+            
+            card.innerHTML = `
+                <span class="card-icon">${item.icon}</span>
+                <span class="card-text">${item.text}</span>
+            `;
+            pool.appendChild(card);
+        });
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        cards.forEach(card => {
+            // Клик для мобильных устройств
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            // Drag & Drop
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+                if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            // Клик по зоне для перемещения выбранной карточки
+            zone.addEventListener('click', () => {
+                if (selectedCard) {
+                    zone.appendChild(selectedCard);
+                    selectedCard.classList.remove('selected');
+                    selectedCard = null;
+                }
+            });
+
+            // Зоны для перетаскивания
+            zone.addEventListener('dragover', (e) => { 
+                e.preventDefault(); 
+                zone.classList.add('drag-over'); 
+            });
+            
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const draggable = document.querySelector('.dragging');
+                if (draggable) {
+                    zone.appendChild(draggable);
+                }
+            });
+        });
+    }
+
+    document.getElementById('check-btn').addEventListener('click', () => {
+        const pool = document.getElementById('pool');
+        const feedback = document.getElementById('feedback');
+        
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Сначала распределите все карточки по колонкам.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        
+        // Проверяем каждую колонку
+        document.querySelectorAll('.column').forEach(column => {
+            const targetType = column.dataset.target;
+            const cardsInColumn = column.querySelectorAll('.card');
+            
+            cardsInColumn.forEach(card => {
+                if (card.dataset.type !== targetType) {
+                    isCorrect = false;
+                }
+            });
+        });
+
+        if (isCorrect) {
+            feedback.innerHTML = '<strong>Верно!</strong> Вы правильно классифицировали процессы проектирования.';
+            feedback.className = 'feedback success';
+            document.getElementById('check-btn').style.display = 'none';
+            
+            // Фиксируем карточки
+            document.querySelectorAll('.card').forEach(c => { 
+                c.removeAttribute('draggable'); 
+                c.style.cursor = 'default'; 
+            });
+        } else {
+            feedback.innerHTML = '<strong>Ошибка.</strong> Некоторые процессы отнесены не к той группе. Обратите внимание: изыскания и расчеты графиков относятся к основной деятельности, а кадры и юридическая работа — к вспомогательной.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
