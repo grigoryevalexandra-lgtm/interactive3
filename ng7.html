@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Этапы ФСА (Адаптивный)</title>
+<style>
+    :root {
+        --primary: #0ea5e9;
+        --primary-hover: #0284c7;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --border-color: #cbd5e1;
+        --theme-header: #b2d8d8;
+        --theme-body: #e6f2f2;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fef2f2;
+        --error-border: #ef4444;
+    }
+
+    /* Адаптация для iframe */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-card);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+        overflow: hidden; /* Строгий запрет двойных скроллов */
+    }
+
+    .widget-container {
+        width: 100%;
+        height: 100vh;
+        padding: 6px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto; /* Прокрутка только внутри виджета */
+        overflow-x: hidden;
+    }
+
+    h3 { margin: 0 0 4px 0; font-size: 14px; color: #0f172a; }
+    p.instruction { color: #475569; font-size: 11px; margin-bottom: 8px; line-height: 1.2; }
+
+    /* Пул карточек */
+    .pool-container {
+        border: 2px dashed #94a3b8;
+        border-radius: 6px;
+        padding: 6px;
+        background: var(--bg-main);
+        margin-bottom: 10px;
+        max-height: 25vh;
+        min-height: 60px;
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+
+    .pool {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    /* Карточки */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--primary);
+        color: #0f172a;
+        padding: 4px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: transform 0.1s, border-color 0.2s, background 0.2s;
+        box-sizing: border-box;
+        max-width: 100%;
+        line-height: 1.15;
+    }
+
+    .card:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .card.selected { background: #e0f2fe; border-width: 2px; padding: 3px 5px; border-color: #0284c7; }
+
+    .card.type-title { font-weight: 700; text-align: center; }
+    .card.type-desc { font-weight: 500; text-align: left; }
+
+    /* СЕТКА ЭТАПОВ (Эластичная) */
+    .stages-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 8px;
+        padding-bottom: 10px;
+    }
+
+    /* Блок этапа */
+    .stage-block {
+        display: flex;
+        flex-direction: column;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        background: var(--theme-body);
+        position: relative;
+    }
+
+    .stage-number {
+        background: #475569;
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        text-align: center;
+        padding: 2px 0;
+    }
+
+    /* Зоны сброса */
+    .dropzone {
+        width: 100%;
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        transition: background 0.2s, border-color 0.2s;
+        box-sizing: border-box;
+    }
+
+    .dropzone-title { min-height: 35px; background: var(--theme-header); border-bottom: 1px dashed #64748b; padding: 3px; }
+    .dropzone-desc { min-height: 70px; background: transparent; padding: 4px; }
+
+    .dropzone.drag-over { border: 2px dashed var(--primary); opacity: 0.8; }
+    
+    .dropzone.empty::before {
+        display: flex; align-items: center; justify-content: center;
+        color: #64748b; font-size: 9px; text-align: center;
+        width: 100%; height: 100%;
+    }
+    
+    .dropzone-title.empty::before { content: 'Название этапа'; }
+    .dropzone-desc.empty::before { content: 'Описание этапа'; }
+
+    .dropzone .card { width: 100%; height: 100%; margin: 0; display: flex; flex-direction: column; justify-content: center; }
+
+    /* Управление */
+    .controls { margin-top: auto; padding-top: 6px; flex-shrink: 0; }
+    button {
+        display: block; width: 100%; background: var(--primary); color: white;
+        border: none; padding: 10px; border-radius: 4px; font-size: 13px;
+        font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: var(--primary-hover); }
+
+    .feedback {
+        margin-top: 6px; padding: 8px; border-radius: 4px; font-weight: 500;
+        font-size: 11px; text-align: center; display: none;
+    }
+    .feedback.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .feedback.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
+
+    .dropzone.error-highlight .card { border-color: var(--error-border); background: var(--error-bg); }
+    .dropzone.success-highlight .card { border-color: var(--success-border); background: var(--success-bg); }
+
+    ::-webkit-scrollbar { height: 4px; width: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Сборка процесса ФСА</h3>
+    <p class="instruction">Распределите 18 карточек по 9 этапам. Соблюдайте хронологию: Этап 1, Этап 2 и т.д.</p>
+
+    <!-- Пул карточек -->
+    <div class="pool-container dropzone" id="pool-container">
+        <div class="pool" id="pool"></div>
+    </div>
+
+    <!-- Сетка -->
+    <div class="stages-grid" id="stages-grid">
+        <!-- Блоки генерируются скриптом -->
+    </div>
+
+    <div class="controls">
+        <button id="check-btn">Проверить сборку</button>
+        <div id="feedback" class="feedback"></div>
+    </div>
+</div>
+
+<script>
+    // Данные без нумерации в заголовках
+    const stageData = [
+        { id: 1, title: "Определение", desc: "• Выявить проблемные вопросы<br>• Спланировать и организовать ФСА" },
+        { id: 2, title: "Информирование", desc: "• Дать понимание текущего состояния проекта и ограничений, влияющих на решения по проекту" },
+        { id: 3, title: "Анализ функциональности", desc: "• Понять проект с функциональной точки зрения, что должен сделать проект" },
+        { id: 4, title: "Креативный", desc: "• Разработать множество идей в отношении того, как можно по-разному выполнять одни и те же функции" },
+        { id: 5, title: "Оценка", desc: "• Проанализировать результаты Креативного этапа и сократить количество идей до короткого списка с наибольшим потенциалом" },
+        { id: 6, title: "Развитие", desc: "• Дальнейший анализ и проработка оставшихся идей" },
+        { id: 7, title: "Презентация", desc: "• Представить идеи руководству и прочим заинтересованным в проекте сторонам или лицам, принимающим решения" },
+        { id: 8, title: "Внедрение", desc: "• Получить окончательное утверждение предложенных альтернатив и содействовать их реализации" },
+        { id: 9, title: "Исполнение", desc: "• Контролировать исполнение и оценивать результативность" }
+    ];
+
+    let selectedCard = null;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        const pool = document.getElementById('pool');
+        const grid = document.getElementById('stages-grid');
+        let cardsToCreate = [];
+
+        // Создаем блоки с нумерацией
+        for (let i = 1; i <= 9; i++) {
+            const block = document.createElement('div');
+            block.className = 'stage-block';
+            block.dataset.expectedId = i;
+            
+            const numHeader = document.createElement('div');
+            numHeader.className = 'stage-number';
+            numHeader.textContent = `Этап ${i}`;
+            block.appendChild(numHeader);
+            
+            const titleZone = document.createElement('div');
+            titleZone.className = 'dropzone dropzone-title empty';
+            titleZone.dataset.targetType = 'title';
+            block.appendChild(titleZone);
+
+            const descZone = document.createElement('div');
+            descZone.className = 'dropzone dropzone-desc empty';
+            descZone.dataset.targetType = 'desc';
+            block.appendChild(descZone);
+
+            grid.appendChild(block);
+        }
+
+        stageData.forEach(stage => {
+            cardsToCreate.push({ id: stage.id, type: 'title', html: stage.title, class: 'type-title' });
+            cardsToCreate.push({ id: stage.id, type: 'desc', html: stage.desc, class: 'type-desc' });
+        });
+
+        shuffle(cardsToCreate).forEach(c => {
+            const card = document.createElement('div');
+            card.className = `card ${c.class}`;
+            card.setAttribute('draggable', 'true');
+            card.dataset.id = c.id;
+            card.dataset.type = c.type;
+            card.innerHTML = c.html;
+            pool.appendChild(card);
+        });
+
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+                if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', (e) => {
+                if (selectedCard) {
+                    moveCardToZone(selectedCard, zone);
+                } else {
+                    if (zone.id !== 'pool-container' && zone.children.length > 0) {
+                        document.getElementById('pool').appendChild(zone.children[0]);
+                        checkEmptyZones();
+                    }
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const dragging = document.querySelector('.dragging');
+                if (dragging) moveCardToZone(dragging, zone);
+            });
+        });
+    }
+
+    function moveCardToZone(card, zone) {
+        if (zone.id === 'pool-container') {
+            document.getElementById('pool').appendChild(card);
+        } else {
+            if (zone.children.length > 0) {
+                document.getElementById('pool').appendChild(zone.children[0]);
+            }
+            zone.appendChild(card);
+        }
+        
+        card.classList.remove('selected');
+        selectedCard = null;
+        checkEmptyZones();
+    }
+
+    function checkEmptyZones() {
+        document.querySelectorAll('.dropzone:not(#pool-container)').forEach(zone => {
+            if (zone.children.length === 0) {
+                zone.classList.add('empty');
+            } else {
+                zone.classList.remove('empty');
+            }
+        });
+    }
+
+    document.getElementById('check-btn').addEventListener('click', () => {
+        const pool = document.getElementById('pool');
+        const feedback = document.getElementById('feedback');
+        
+        document.querySelectorAll('.dropzone').forEach(z => {
+            z.classList.remove('error-highlight', 'success-highlight');
+        });
+        
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Сначала распределите все 18 карточек.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        
+        document.querySelectorAll('.stage-block').forEach((block) => {
+            const expectedId = parseInt(block.dataset.expectedId);
+            const titleZone = block.querySelector('.dropzone-title');
+            const descZone = block.querySelector('.dropzone-desc');
+            
+            const titleCard = titleZone.querySelector('.card');
+            const descCard = descZone.querySelector('.card');
+
+            let blockValid = false;
+
+            if (titleCard && descCard) {
+                const isTitleCorrectType = titleCard.dataset.type === 'title';
+                const isDescCorrectType = descCard.dataset.type === 'desc';
+                const isTitleCorrectId = parseInt(titleCard.dataset.id) === expectedId;
+                const isDescCorrectId = parseInt(descCard.dataset.id) === expectedId;
+
+                if (isTitleCorrectType && isDescCorrectType && isTitleCorrectId && isDescCorrectId) {
+                    blockValid = true;
+                }
+            }
+
+            if (blockValid) {
+                titleZone.classList.add('success-highlight');
+                descZone.classList.add('success-highlight');
+            } else {
+                isCorrect = false;
+                titleZone.classList.add('error-highlight');
+                descZone.classList.add('error-highlight');
+            }
+        });
+
+        if (isCorrect) {
+            feedback.innerHTML = '<strong>Отлично!</strong> Этапы ФСА выстроены в верной последовательности.';
+            feedback.className = 'feedback success';
+            document.getElementById('check-btn').style.display = 'none';
+            
+            document.querySelectorAll('.card').forEach(c => { 
+                c.removeAttribute('draggable'); 
+                c.style.cursor = 'default'; 
+            });
+            document.querySelectorAll('.dropzone').forEach(z => z.style.pointerEvents = 'none');
+        } else {
+            feedback.innerHTML = '<strong>Есть ошибки.</strong> Проверьте соответствие этапов их номерам и описаниям.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
