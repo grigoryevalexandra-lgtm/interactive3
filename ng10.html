@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Матрица лучших практик</title>
+<style>
+    :root {
+        --primary-bar: #f59e0b;
+        --primary-bar-border: #d97706;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --border-color: #cbd5e1;
+        --header-phase-bg: #fde68a;
+        --header-phase-text: #92400e;
+        --section-bg: #475569;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fee2e2;
+        --error-border: #ef4444;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+        overflow: hidden;
+    }
+
+    .widget-container {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    }
+
+    /* Верхняя панель управления */
+    .top-panel {
+        padding: 10px 14px;
+        background: var(--bg-card);
+        border-bottom: 2px solid var(--border-color);
+        z-index: 20;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        flex-shrink: 0;
+    }
+
+    .top-panel h3 { margin: 0 0 4px 0; font-size: 14px; color: #0f172a; }
+    .top-panel p { color: #64748b; font-size: 11px; margin: 0 0 8px 0; line-height: 1.3; }
+
+    /* Палитра блоков */
+    .pool-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: #f1f5f9;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px dashed #94a3b8;
+    }
+
+    .pool-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        cursor: pointer;
+    }
+
+    .pool-item span {
+        font-size: 9px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+    }
+
+    .bar-sample {
+        height: 16px;
+        background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+        border: 1px solid var(--primary-bar-border);
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .bar-sample:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .pool-item.selected .bar-sample {
+        outline: 2px solid #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+        transform: scale(1.05);
+    }
+
+    .len-1 { width: 34px; }
+    .len-2 { width: 68px; }
+    .len-3 { width: 102px; }
+    .len-4 { width: 136px; }
+    .len-5 { width: 170px; }
+
+    /* Панель прогресса и кнопок */
+    .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .progress-info {
+        font-size: 12px;
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-track {
+        width: 120px;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: #10b981;
+        transition: width 0.3s ease;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 6px;
+    }
+
+    button {
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .btn-check {
+        background: #2563eb;
+        color: white;
+    }
+    .btn-check:hover { background: #1d4ed8; }
+
+    .btn-reset {
+        background: #e2e8f0;
+        color: #475569;
+    }
+    .btn-reset:hover { background: #cbd5e1; }
+
+    /* Таблица матрицы */
+    .matrix-wrapper {
+        flex-grow: 1;
+        overflow: auto;
+        padding: 10px 14px;
+    }
+
+    .matrix-grid {
+        display: grid;
+        grid-template-columns: minmax(210px, 1.8fr) repeat(5, minmax(65px, 1fr));
+        background: var(--border-color);
+        gap: 1px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        min-width: 620px;
+        position: relative;
+    }
+
+    .cell {
+        background: var(--bg-card);
+        padding: 5px 6px;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        position: relative;
+        min-height: 24px;
+        box-sizing: border-box;
+    }
+
+    .cell-task {
+        font-weight: 500;
+        color: #1e293b;
+        justify-content: flex-end;
+        text-align: right;
+        padding-right: 10px;
+        line-height: 1.2;
+    }
+
+    .header-cell {
+        background: var(--header-phase-bg);
+        color: var(--header-phase-text);
+        font-weight: 700;
+        font-size: 10px;
+        text-align: center;
+        justify-content: center;
+        text-transform: uppercase;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 2px solid #d97706;
+    }
+
+    .header-first {
+        background: #f1f5f9;
+        color: #475569;
+        justify-content: flex-start;
+        padding-left: 10px;
+        border-bottom: 2px solid #cbd5e1;
+    }
+
+    .section-cell {
+        background: var(--section-bg);
+        color: white;
+        font-weight: 700;
+        font-size: 10px;
+        text-transform: uppercase;
+        justify-content: center;
+        grid-column: 1 / -1;
+        padding: 4px;
+        letter-spacing: 1px;
+    }
+
+    /* Зоны клика / сброса */
+    .dropzone {
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .dropzone:hover { background: #fef3c7; }
+    .dropzone.drag-over { background: #fde68a !important; }
+    .dropzone.error-flash { background: #fecaca !important; transition: background 0.1s; }
+
+    /* Отрисованные оранжевые блоки на сетке */
+    .placed-bar {
+        background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+        border: 1px solid var(--primary-bar-border);
+        height: 16px;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        z-index: 5;
+        margin: auto 3px;
+        pointer-events: none;
+        animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+        from { transform: scale(0.85); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Сообщение об успехе */
+    .feedback-banner {
+        margin-top: 6px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        display: none;
+    }
+    .feedback-banner.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .feedback-banner.info { display: block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <div class="top-panel">
+        <h3>Матрица лучших практик</h3>
+        <p>
+            <strong>Как заполнять:</strong> кликните на полоску нужной длины ниже (или перетащите её), затем кликните на клетку начала фазы в нужной строке. Верно выбранный интервал зафиксируется.
+        </p>
+
+        <!-- Пул полос разной длины -->
+        <div class="pool-wrapper" id="pool">
+            <div class="pool-item" data-len="1" draggable="true">
+                <span>1 фаза</span>
+                <div class="bar-sample len-1"></div>
+            </div>
+            <div class="pool-item" data-len="2" draggable="true">
+                <span>2 фазы</span>
+                <div class="bar-sample len-2"></div>
+            </div>
+            <div class="pool-item" data-len="3" draggable="true">
+                <span>3 фазы</span>
+                <div class="bar-sample len-3"></div>
+            </div>
+            <div class="pool-item" data-len="4" draggable="true">
+                <span>4 фазы</span>
+                <div class="bar-sample len-4"></div>
+            </div>
+            <div class="pool-item" data-len="5" draggable="true">
+                <span>5 фаз</span>
+                <div class="bar-sample len-5"></div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="progress-info">
+                <span>Размещено: <strong id="placed-count">0</strong> из <strong id="total-count">0</strong></span>
+                <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-check" id="btn-check">Проверить</button>
+                <button class="btn-reset" id="btn-reset">Сбросить</button>
+            </div>
+        </div>
+
+        <div class="feedback-banner" id="feedback"></div>
+    </div>
+
+    <!-- Область таблицы -->
+    <div class="matrix-wrapper">
+        <div class="matrix-grid" id="matrix"></div>
+    </div>
+</div>
+
+<script>
+    // 1=Определение, 2=Выбор, 3=Проработка, 4=Реализация, 5=Эксплуатация
+    const structure = [
+        { type: 'section', name: 'ОБЗОР' },
+        { id: 0, name: 'Рассмотрение условий контракта', reqs: [{c:1, l:1}, {c:2, l:1}, {c:3, l:1}, {c:4, l:1}, {c:5, l:1}] },
+        { id: 1, name: 'Коллегиальная оценка', reqs: [{c:1, l:1}, {c:2, l:1}] },
+        { id: 2, name: 'Коллегиальная поддержка', reqs: [{c:1, l:4}] },
+        { id: 3, name: 'Оценка готовности к строительству', reqs: [{c:4, l:1}] },
+        { id: 4, name: 'Обзор стоимости и календарного плана', reqs: [{c:2, l:1}, {c:3, l:1}] },
+        { id: 5, name: 'Обзор организационной возможности проекта', reqs: [{c:1, l:1}, {c:2, l:1}, {c:3, l:1}] },
+        { id: 6, name: 'Оценка полной безопасности', reqs: [{c:3, l:1}, {c:4, l:1}] },
+        { id: 7, name: 'Оценка готовности к пуску', reqs: [{c:4, l:1}] },
+        { id: 8, name: 'Обзор ОТ, ПБ и ООС в проекте', reqs: [{c:1, l:4}] },
+        { id: 9, name: 'Оценка готовности к пусконаладке', reqs: [{c:4, l:1}] },
+        { id: 10, name: 'Обзор эксплуатационной готовности', reqs: [{c:2, l:1}, {c:3, l:1}, {c:4, l:1}] },
+
+        { type: 'section', name: 'СЕМИНАР' },
+        { id: 11, name: 'Анализ влияния рисков', reqs: [{c:2, l:1}, {c:3, l:1}] },
+        { id: 12, name: 'Семинар по стратегии управления', reqs: [{c:2, l:1}, {c:3, l:1}] },
+        { id: 13, name: 'Выявление опасностей', reqs: [{c:2, l:1}] },
+        { id: 14, name: 'Выявление опасности и работоспособности', reqs: [{c:3, l:1}, {c:4, l:1}] },
+        { id: 15, name: 'Семинар по рискам', reqs: [{c:1, l:4}] },
+        { id: 16, name: 'Разработка ИПП', reqs: [{c:1, l:1}, {c:2, l:1}, {c:3, l:1}] },
+
+        { type: 'section', name: 'ПЛАН/ДОКУМЕНТ' },
+        { id: 17, name: 'Отчет о закрытии проекта', reqs: [{c:3, l:1}, {c:4, l:1}] },
+        { id: 18, name: 'Реестр проектных решений', reqs: [{c:1, l:4}] },
+        { id: 19, name: 'План получения согласований и разрешений', reqs: [{c:1, l:4}] },
+        { id: 20, name: 'План взаимодействия участниками проекта', reqs: [{c:1, l:4}] },
+        { id: 21, name: 'Основы проектирования', reqs: [{c:1, l:3}] },
+        { id: 22, name: 'Извлеченные уроки', reqs: [{c:1, l:5}] },
+        { id: 23, name: 'Процедура управления изменениями', reqs: [{c:1, l:4}] },
+
+        { type: 'section', name: 'СОВЕЩАНИЕ' },
+        { id: 24, name: 'Установочное совещание', reqs: [{c:1, l:1}, {c:2, l:1}, {c:3, l:1}, {c:4, l:1}] },
+        { id: 25, name: 'Рассмотрение P&ID', reqs: [{c:3, l:1}] }
+    ];
+
+    let selectedLength = 1; // По умолчанию выбрана длина 1
+    let totalItems = 0;
+    let placedItems = 0;
+
+    function init() {
+        const matrix = document.getElementById('matrix');
+        matrix.innerHTML = '';
+        totalItems = 0;
+        placedItems = 0;
+
+        let gridRowIndex = 1;
+
+        // Заголовки таблицы
+        matrix.innerHTML += `<div class="cell header-cell header-first" style="grid-row: ${gridRowIndex}; grid-column: 1;">ЛУЧШИЕ ПРАКТИКИ</div>`;
+        const phases = ['1 Определение', '2 Выбор', '3 Проработка', '4 Реализация', '5 Эксплуатация'];
+        phases.forEach((p, i) => {
+            matrix.innerHTML += `<div class="cell header-cell" style="grid-row: ${gridRowIndex}; grid-column: ${i+2};">${p}</div>`;
+        });
+        gridRowIndex++;
+
+        // Строки
+        structure.forEach(row => {
+            if (row.type === 'section') {
+                matrix.innerHTML += `<div class="cell section-cell" style="grid-row: ${gridRowIndex};">${row.name}</div>`;
+                gridRowIndex++;
+            } else {
+                row.reqs.forEach(r => {
+                    r.placed = false;
+                    totalItems++;
+                });
+
+                matrix.innerHTML += `<div class="cell cell-task" style="grid-row: ${gridRowIndex}; grid-column: 1;">${row.name}</div>`;
+
+                for (let col = 1; col <= 5; col++) {
+                    const dropzone = document.createElement('div');
+                    dropzone.className = 'cell dropzone';
+                    dropzone.style.gridRow = gridRowIndex;
+                    dropzone.style.gridColumn = col + 1;
+                    dropzone.dataset.taskId = row.id;
+                    dropzone.dataset.col = col;
+                    dropzone.dataset.gridRow = gridRowIndex;
+                    matrix.appendChild(dropzone);
+                }
+                gridRowIndex++;
+            }
+        });
+
+        document.getElementById('total-count').textContent = totalItems;
+        updateProgress();
+        setupPalette();
+        setupGridInteractions();
+    }
+
+    // Выбор длины из палитры (клик или драг)
+    function setupPalette() {
+        const items = document.querySelectorAll('.pool-item');
+        
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                items.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                selectedLength = parseInt(item.dataset.len);
+            });
+
+            item.addEventListener('dragstart', (e) => {
+                selectedLength = parseInt(item.dataset.len);
+                items.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                // Обязательно для iframe и браузеров
+                e.dataTransfer.setData('text/plain', selectedLength);
+                e.dataTransfer.effectAllowed = 'copy';
+            });
+        });
+
+        // По умолчанию активируем 1-ю полоску
+        items[0].classList.add('selected');
+    }
+
+    function setupGridInteractions() {
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        dropzones.forEach(zone => {
+            // Клик по ячейке
+            zone.addEventListener('click', () => {
+                handlePlacement(zone, selectedLength);
+            });
+
+            // Drag&Drop
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                handlePlacement(zone, selectedLength);
+            });
+        });
+    }
+
+    function handlePlacement(zone, len) {
+        const taskId = parseInt(zone.dataset.taskId);
+        const col = parseInt(zone.dataset.col);
+        const gridRow = zone.dataset.gridRow;
+
+        const task = structure.find(t => t.id === taskId);
+        if (!task) return;
+
+        // Ищем невыполненное требование с такой стартовой колонкой и длиной
+        const req = task.reqs.find(r => r.c === col && r.l === len && !r.placed);
+
+        if (req) {
+            req.placed = true;
+            placedItems++;
+
+            // Создаем оранжевую полосу
+            const placedBar = document.createElement('div');
+            placedBar.className = 'placed-bar';
+            placedBar.style.gridRow = gridRow;
+            placedBar.style.gridColumn = `${col + 1} / span ${len}`;
+            
+            document.getElementById('matrix').appendChild(placedBar);
+            updateProgress();
+
+            showFeedback(`Верно! Практика «${task.name}» закреплена.`, 'info');
+
+            if (placedItems === totalItems) {
+                showFeedback('Отлично! Вы безошибочно заполнили всю матрицу лучших практик!', 'success');
+            }
+        } else {
+            // Ошибка: подсветка красным
+            zone.classList.add('error-flash');
+            setTimeout(() => zone.classList.remove('error-flash'), 250);
+            showFeedback('В этой точке графика нет такой практики или выбрана другая длительность.', 'info');
+        }
+    }
+
+    function updateProgress() {
+        document.getElementById('placed-count').textContent = placedItems;
+        const pct = Math.round((placedItems / totalItems) * 100);
+        document.getElementById('progress-fill').style.width = pct + '%';
+    }
+
+    function showFeedback(text, type) {
+        const fb = document.getElementById('feedback');
+        fb.textContent = text;
+        fb.className = `feedback-banner ${type}`;
+    }
+
+    document.getElementById('btn-check').addEventListener('click', () => {
+        if (placedItems === totalItems) {
+            showFeedback('Все практики расставлены верно, график завершен!', 'success');
+        } else {
+            showFeedback(`Установлено ${placedItems} из ${totalItems} интервалов. Продолжайте заполнять пустые стадии.`, 'info');
+        }
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        init();
+        showFeedback('Матрица сброшена к исходному состоянию.', 'info');
+    });
+
+    init();
+</script>
+</body>
+</html>
