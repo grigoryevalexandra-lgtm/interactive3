@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Практики и требования (с блокировкой)</title>
+<style>
+    :root {
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --border-color: #cbd5e1;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fef2f2;
+        --error-border: #ef4444;
+        
+        --color-green: #22c55e;
+        --color-red: #ef4444;
+        --color-grey: #64748b;
+    }
+
+    /* Адаптация для iframe */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+        overflow-x: hidden; /* Запрет горизонтального скролла */
+    }
+
+    .widget-container {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+    /* Блок отдельного задания */
+    .task-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        position: relative;
+        transition: opacity 0.3s ease;
+    }
+
+    .task-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        line-height: 1.3;
+    }
+
+    /* Блокировка (замочек) */
+    .locked {
+        opacity: 0.5;
+        pointer-events: none;
+        user-select: none;
+    }
+    
+    .lock-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(248, 250, 252, 0.6);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        backdrop-filter: blur(2px);
+    }
+
+    .lock-message {
+        background: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: 1px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .unlocked .lock-overlay {
+        display: none;
+    }
+
+    /* Пул карточек */
+    .pool {
+        border: 2px dashed #94a3b8;
+        border-radius: 6px;
+        padding: 8px;
+        background: var(--bg-main);
+        margin-bottom: 10px;
+        min-height: 40px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+
+    /* Карточки */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--primary);
+        color: #0f172a;
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: transform 0.1s, border-color 0.2s;
+        box-sizing: border-box;
+        text-align: center;
+        max-width: 100%;
+        line-height: 1.2;
+    }
+
+    .card:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .card.selected { background: #dbeafe; border-width: 2px; padding: 5px 7px; border-color: #1d4ed8; }
+
+    /* Зоны сброса */
+    .dropzone {
+        min-height: 35px;
+        border: 1px dashed var(--border-color);
+        border-radius: 4px;
+        background: #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+        transition: background 0.2s, border-color 0.2s;
+        align-items: stretch;
+    }
+    .dropzone .card { width: 100%; margin: 0; }
+    .dropzone.drag-over { background: #e0e7ff; border-color: var(--primary); }
+    
+    /* Задание 1 (Список) */
+    .seq-row { display: flex; align-items: stretch; margin-bottom: 6px; gap: 6px; }
+    .seq-num {
+        display: flex; align-items: center; justify-content: center;
+        background: var(--primary); color: white; font-weight: bold;
+        font-size: 12px; border-radius: 4px; width: 28px; flex-shrink: 0;
+    }
+    .seq-row .dropzone { flex-grow: 1; min-height: 32px; justify-content: center; }
+
+    /* Задания 2 и 3 (Сетки) */
+    .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+    .grid-3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+    
+    .col-header {
+        background: #475569; color: white; text-align: center;
+        font-size: 10px; font-weight: 600; padding: 6px 2px;
+        border-radius: 4px 4px 0 0; line-height: 1.1; word-wrap: break-word;
+    }
+    .col-header.bg-green { background: var(--color-green); }
+    .col-header.bg-red { background: var(--color-red); }
+    .col-header.bg-grey { background: var(--color-grey); }
+
+    .grid-2 .dropzone, .grid-3 .dropzone { border-radius: 0 0 4px 4px; border-top: none; min-height: 60px; }
+
+    /* Кнопки и фидбек */
+    .controls { margin-top: 10px; }
+    button {
+        display: block; width: 100%; background: var(--primary); color: white;
+        border: none; padding: 10px; border-radius: 4px; font-size: 13px;
+        font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: var(--primary-hover); }
+
+    .feedback {
+        margin-top: 6px; padding: 8px; border-radius: 4px; font-weight: 500;
+        font-size: 12px; text-align: center; display: none;
+    }
+    .feedback.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .feedback.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
+
+    .card.error-highlight { border-color: var(--error-border) !important; background: var(--error-bg); }
+    .card.success-highlight { border-color: var(--success-border) !important; background: var(--success-bg); }
+
+    ::-webkit-scrollbar { height: 4px; width: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    
+    <!-- ЗАДАНИЕ 1 (Открыто сразу) -->
+    <div class="task-container unlocked" id="task1">
+        <div class="task-title">1) Расположите практики в последовательности реализации при проектировании:</div>
+        <div class="pool dropzone" data-task="1" id="pool1"></div>
+        <div class="seq-slots">
+            <div class="seq-row"><div class="seq-num">1</div><div class="dropzone" data-task="1" data-target="slot1"></div></div>
+            <div class="seq-row"><div class="seq-num">2</div><div class="dropzone" data-task="1" data-target="slot2"></div></div>
+            <div class="seq-row"><div class="seq-num">3</div><div class="dropzone" data-task="1" data-target="slot3"></div></div>
+            <div class="seq-row"><div class="seq-num">4</div><div class="dropzone" data-task="1" data-target="slot4"></div></div>
+        </div>
+        <div class="controls">
+            <button onclick="checkTask(1)" id="btn1">Проверить 1 задание</button>
+            <div class="feedback" id="feedback1"></div>
+        </div>
+    </div>
+
+    <!-- ЗАДАНИЕ 2 (Заблокировано) -->
+    <div class="task-container locked" id="task2">
+        <div class="lock-overlay"><div class="lock-message">🔒 Пройдите предыдущее задание</div></div>
+        <div class="task-title">2) Разделите практики на те, которые лучше применять на ранних стадиях проекта (определения и выбора), и те, которые лучше ставить в график проекта на стадии реализации:</div>
+        <div class="pool dropzone" data-task="2" id="pool2"></div>
+        <div class="grid-2">
+            <div>
+                <div class="col-header">Выбор</div>
+                <div class="dropzone" data-task="2" data-target="выбор"></div>
+            </div>
+            <div>
+                <div class="col-header">Реализация</div>
+                <div class="dropzone" data-task="2" data-target="реализация"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="checkTask(2)" id="btn2">Проверить 2 задание</button>
+            <div class="feedback" id="feedback2"></div>
+        </div>
+    </div>
+
+    <!-- ЗАДАНИЕ 3 (Заблокировано) -->
+    <div class="task-container locked" id="task3">
+        <div class="lock-overlay"><div class="lock-message">🔒 Пройдите предыдущее задание</div></div>
+        <div class="task-title">3) Отнесите требования к одной из трех категорий:</div>
+        <div class="pool dropzone" data-task="3" id="pool3"></div>
+        <div class="grid-3">
+            <div>
+                <div class="col-header bg-green">Бизнес-цель</div>
+                <div class="dropzone" data-task="3" data-target="бизнес-цель"></div>
+            </div>
+            <div>
+                <div class="col-header bg-red">Класс качества</div>
+                <div class="dropzone" data-task="3" data-target="класс-качества"></div>
+            </div>
+            <div>
+                <div class="col-header bg-grey">Ограничение</div>
+                <div class="dropzone" data-task="3" data-target="ограничение"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="checkTask(3)" id="btn3">Проверить 3 задание</button>
+            <div class="feedback" id="feedback3"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Исправлены пунктуация и опечатки (3Д -> 3D-модели, технологии -> технологичности)
+    const data = {
+        task1: [
+            { id: "t1_1", text: "Определение классов качества", target: "slot1" },
+            { id: "t1_2", text: "Функционально-стоимостной анализ", target: "slot2" },
+            { id: "t1_3", text: "Обзор технологии строительства", target: "slot3" },
+            { id: "t1_4", text: "Рассмотрение 3D-модели", target: "slot4" }
+        ],
+        task2: [
+            { id: "t2_1", text: "Определение классов качества", target: "выбор" },
+            { id: "t2_2", text: "Функционально-стоимостной анализ", target: "выбор" },
+            { id: "t2_3", text: "Обзор технологии строительства", target: "реализация" },
+            { id: "t2_4", text: "Рассмотрение 3D-модели", target: "реализация" }
+        ],
+        task3: [
+            { id: "t3_1", text: "Прибыль", target: "бизнес-цель" },
+            { id: "t3_2", text: "Удобство обслуживания", target: "класс-качества" },
+            { id: "t3_3", text: "Уровень автоматизации", target: "класс-качества" },
+            { id: "t3_4", text: "Площадь менее выделенного участка", target: "ограничение" },
+            { id: "t3_5", text: "Энергопотребление менее существующего резерва", target: "ограничение" }
+        ]
+    };
+
+    let selectedCard = null;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        [1, 2, 3].forEach(taskNum => {
+            const pool = document.getElementById(`pool${taskNum}`);
+            const shuffled = shuffle([...data[`task${taskNum}`]]);
+            
+            shuffled.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('draggable', 'true');
+                card.dataset.task = taskNum;
+                card.dataset.target = item.target;
+                card.textContent = item.text;
+                pool.appendChild(card);
+            });
+        });
+
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    if(card.getAttribute('draggable') === 'true') {
+                        selectedCard = card;
+                        card.classList.add('selected');
+                    }
+                }
+            });
+
+            card.addEventListener('dragstart', (e) => {
+                if(card.getAttribute('draggable') === 'true') {
+                    card.classList.add('dragging');
+                    if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+                } else {
+                    e.preventDefault();
+                }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', (e) => {
+                if (selectedCard && selectedCard.dataset.task === zone.dataset.task) {
+                    if (zone.dataset.task === "1" && zone.id !== "pool1" && zone.children.length > 0) {
+                        document.getElementById('pool1').appendChild(zone.children[0]);
+                    }
+                    zone.appendChild(selectedCard);
+                    selectedCard.classList.remove('selected');
+                    selectedCard.classList.remove('error-highlight');
+                    selectedCard = null;
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const dragging = document.querySelector('.dragging');
+                if (dragging && dragging.dataset.task === zone.dataset.task) {
+                    zone.classList.add('drag-over');
+                }
+            });
+
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const dragging = document.querySelector('.dragging');
+                
+                if (dragging && dragging.dataset.task === zone.dataset.task) {
+                    if (zone.dataset.task === "1" && zone.id !== "pool1" && zone.children.length > 0) {
+                        document.getElementById('pool1').appendChild(zone.children[0]);
+                    }
+                    zone.appendChild(dragging);
+                    dragging.classList.remove('error-highlight');
+                }
+            });
+        });
+    }
+
+    window.checkTask = function(taskNum) {
+        const pool = document.getElementById(`pool${taskNum}`);
+        const feedback = document.getElementById(`feedback${taskNum}`);
+        const taskContainer = document.getElementById(`task${taskNum}`);
+        const cards = taskContainer.querySelectorAll('.card');
+        
+        cards.forEach(c => c.classList.remove('error-highlight', 'success-highlight'));
+
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Сперва распределите все карточки.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        
+        taskContainer.querySelectorAll('.dropzone:not(.pool)').forEach(zone => {
+            const zoneTarget = zone.dataset.target;
+            const zoneCards = zone.querySelectorAll('.card');
+            
+            zoneCards.forEach(card => {
+                if (card.dataset.target !== zoneTarget) {
+                    isCorrect = false;
+                    card.classList.add('error-highlight');
+                } else {
+                    card.classList.add('success-highlight');
+                }
+            });
+        });
+
+        if (isCorrect) {
+            feedback.innerHTML = '<strong>Верно!</strong> Задание выполнено.';
+            feedback.className = 'feedback success';
+            document.getElementById(`btn${taskNum}`).style.display = 'none';
+            
+            cards.forEach(c => { 
+                c.removeAttribute('draggable'); 
+                c.style.cursor = 'default'; 
+            });
+
+            // Разблокировка следующего задания
+            if (taskNum === 1) {
+                const nextTask = document.getElementById('task2');
+                nextTask.classList.remove('locked');
+                nextTask.classList.add('unlocked');
+            } else if (taskNum === 2) {
+                const nextTask = document.getElementById('task3');
+                nextTask.classList.remove('locked');
+                nextTask.classList.add('unlocked');
+            }
+            
+        } else {
+            feedback.innerHTML = '<strong>Есть ошибки.</strong> Неверные карточки выделены красным. Верните их в пул и попробуйте снова.';
+            feedback.className = 'feedback error';
+        }
+    };
+
+    init();
+</script>
+</body>
+</html>
