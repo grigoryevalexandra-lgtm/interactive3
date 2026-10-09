@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Матрица стадий проектирования</title>
+<style>
+    :root {
+        --primary-color: #2E5BFF;
+        --primary-hover: #1C44D6;
+        --bg-color: #F8FAFC;
+        --card-bg: #FFFFFF;
+        --text-main: #1E293B;
+        --border-color: #CBD5E1;
+        --header-bg: #475569;
+        --row-header-bg: #E2E8F0;
+        --dropzone-bg: #F1F5F9;
+        --success-bg: #D1FAE5;
+        --success-text: #065F46;
+        --error-bg: #FEE2E2;
+        --error-text: #991B1B;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        padding: 16px;
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .widget-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        box-sizing: border-box;
+    }
+
+    h3 { margin: 0 0 8px 0; font-size: 20px; color: #0F172A; }
+    p.instruction { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+
+    /* Пул карточек */
+    .pool-container {
+        border: 2px dashed #94A3B8;
+        border-radius: 8px;
+        padding: 16px;
+        background: var(--bg-color);
+        margin-bottom: 24px;
+        max-height: 400px; 
+        overflow-y: auto;
+    }
+
+    .pool {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-start;
+    }
+
+    /* Карточки */
+    .card {
+        background: var(--card-bg);
+        border: 1px solid var(--primary-color);
+        color: #0F172A;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        user-select: none;
+        transition: all 0.15s ease;
+        box-sizing: border-box;
+        max-width: 100%;
+        word-wrap: break-word;
+        line-height: 1.3;
+    }
+
+    .card:hover { background: #EEF2FF; border-color: var(--primary-hover); transform: translateY(-1px); }
+    .card.dragging { opacity: 0.4; transform: scale(0.98); }
+    .card.selected { 
+        background: #E0E7FF; 
+        border-width: 2px; 
+        padding: 9px 11px; 
+        box-shadow: 0 0 0 3px rgba(46, 91, 255, 0.2); 
+    }
+
+    /* Адаптивная таблица */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        margin-bottom: 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1100px; 
+    }
+
+    th, td {
+        border: 1px solid var(--border-color);
+        padding: 10px;
+        vertical-align: top;
+    }
+
+    th {
+        background-color: var(--header-bg);
+        color: #FFFFFF;
+        font-weight: 600;
+        font-size: 14px;
+        text-align: center;
+        padding: 14px 10px;
+    }
+
+    th.row-header {
+        background-color: var(--row-header-bg);
+        color: var(--text-main);
+        text-align: left;
+        width: 160px;
+        vertical-align: middle;
+    }
+
+    td {
+        width: 235px; 
+        background-color: var(--dropzone-bg);
+        padding: 8px;
+    }
+
+    /* Зоны сброса */
+    .dropzone {
+        min-height: 100px;
+        height: 100%;
+        border: 2px dashed transparent;
+        border-radius: 6px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .dropzone.drag-over { background: #E0E7FF; border-color: var(--primary-color); }
+    .dropzone.empty::before {
+        content: 'Перетащите сюда';
+        color: #94A3B8;
+        font-size: 12px;
+        width: 100%;
+        text-align: center;
+        margin-top: 40px;
+        display: block;
+    }
+
+    .dropzone .card { width: 100%; margin: 0; }
+
+    /* Кнопки и фидбек */
+    button {
+        display: block;
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    button:hover { background: var(--primary-hover); }
+
+    .feedback {
+        margin-top: 16px;
+        padding: 16px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+    }
+    .feedback.success { display: block; background: var(--success-bg); color: var(--success-text); border: 1px solid #34D399; }
+    .feedback.error { display: block; background: var(--error-bg); color: var(--error-text); border: 1px solid #F87171; }
+
+    .dropzone.error-highlight { border-color: var(--error-text); background: var(--error-bg); }
+    .dropzone.success-highlight { border-color: var(--success-text); background: var(--success-bg); }
+
+    ::-webkit-scrollbar { height: 8px; width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Сопоставление параметров и стадий проекта</h3>
+    <p class="instruction">
+        Распределите характеристики (документы, изыскания, точность и т.д.) по соответствующим стадиям жизненного цикла проекта. 
+        <br><strong>Как управлять:</strong> перетаскивайте карточки мышью ИЛИ кликните по карточке в пуле, а затем по нужной ячейке в таблице.
+    </p>
+
+    <!-- Пул карточек -->
+    <div class="pool-container dropzone" id="pool-container">
+        <div class="pool" id="pool"></div>
+    </div>
+
+    <!-- Матрица -->
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th class="row-header">Характеристика</th>
+                    <th>Этап 1. Прединвестиционная стадия</th>
+                    <th>Этап 2. Предпроектная стадия</th>
+                    <th>Этап 3. Подготовка к реализации</th>
+                    <th>Этап 4. Реализация</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th class="row-header">Документация для стадии</th>
+                    <td><div class="dropzone empty" data-target="r1c1"></div></td>
+                    <td><div class="dropzone empty" data-target="r1c2"></div></td>
+                    <td><div class="dropzone empty" data-target="r1c3"></div></td>
+                    <td><div class="dropzone empty" data-target="r1c4"></div></td>
+                </tr>
+                <tr>
+                    <th class="row-header">Западный подход</th>
+                    <td><div class="dropzone empty" data-target="r2c1"></div></td>
+                    <td><div class="dropzone empty" data-target="r2c2"></div></td>
+                    <td><div class="dropzone empty" data-target="r2c3"></div></td>
+                    <td><div class="dropzone empty" data-target="r2c4"></div></td>
+                </tr>
+                <tr>
+                    <th class="row-header">Примерный объем работ</th>
+                    <td><div class="dropzone empty" data-target="r3c1"></div></td>
+                    <td><div class="dropzone empty" data-target="r3c2"></div></td>
+                    <td><div class="dropzone empty" data-target="r3c3"></div></td>
+                    <td><div class="dropzone empty" data-target="r3c4"></div></td>
+                </tr>
+                <tr>
+                    <th class="row-header">Точность оценки</th>
+                    <td><div class="dropzone empty" data-target="r4c1"></div></td>
+                    <td><div class="dropzone empty" data-target="r4c2"></div></td>
+                    <td><div class="dropzone empty" data-target="r4c3"></div></td>
+                    <td><div class="dropzone empty" data-target="r4c4"></div></td>
+                </tr>
+                <tr>
+                    <th class="row-header">Детализация</th>
+                    <td><div class="dropzone empty" data-target="r5c1"></div></td>
+                    <td><div class="dropzone empty" data-target="r5c2"></div></td>
+                    <td><div class="dropzone empty" data-target="r5c3"></div></td>
+                    <td><div class="dropzone empty" data-target="r5c4"></div></td>
+                </tr>
+                <tr>
+                    <th class="row-header">Изыскания</th>
+                    <td><div class="dropzone empty" data-target="r6c1"></div></td>
+                    <td><div class="dropzone empty" data-target="r6c2"></div></td>
+                    <td><div class="dropzone empty" data-target="r6c3"></div></td>
+                    <td><div class="dropzone empty" data-target="r6c4"></div></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button id="check-btn">Проверить распределение</button>
+    <div id="feedback" class="feedback"></div>
+</div>
+
+<script>
+    // Массив данных с исправленными опечатками и пунктуацией
+    const matrixData = [
+        // Строка 1: Документация
+        { id: "r1c1", text: "Отчет аудита<br><br>Инвестиционные идеи и концепты" },
+        { id: "r1c2", text: "ТЭО (Технико-экономическое обоснование)<br><br>ОТР (Общие технические решения)<br><br>ИД (Исходные данные для проектирования по результатам НИР)" },
+        { id: "r1c3", text: "СЗЗ (Проект санитарно-защитной зоны)<br><br>ТУ (Технические условия на подключение)<br><br>ПД (Проектная документация)" },
+        { id: "r1c4", text: "РД (Рабочая документация для строительства)<br><br>КМД и другая конструкторская документация на оборудование" },
+        
+        // Строка 2: Западный подход
+        { id: "r2c1", text: "Scoping Study<br><br>Conceptual Engineering" },
+        { id: "r2c2", text: "Feasibility Study<br><br>Basic Engineering<br><br>Preliminary Design<br><br>Developed Design" },
+        { id: "r2c3", text: "Technical Design<br><br>Extended Basic Design<br><br>Front-End Engineering Design<br><br>Detailed Engineering" },
+        { id: "r2c4", text: "Detailed Design<br><br>Working Design<br><br>Contractor design" },
+        
+        // Строка 3: Объем работ
+        { id: "r3c1", text: "Изучение возможности реализации.<br><br>Описание рынка, технологий, логистики.<br><br>Расчет NPV, IRR и других инвест. показателей." },
+        { id: "r3c2", text: "Изучение вариантов реализации по крупным инженерным дисциплинам.<br><br>Разработка задания на проектирование.<br><br>Оценка воздействия на окружающую среду (если требуется)." },
+        { id: "r3c3", text: "Инженерные решения по 20 инженерным дисциплинам и подтверждение их санитарной, экологической и промышленной безопасности.<br><br>Сводный сметный расчет." },
+        { id: "r3c4", text: "Чертежи.<br><br>Прилагаемые документы (ведомости, журналы).<br><br>Заказные спецификации.<br><br>Объектные и локальные сметы." },
+        
+        // Строка 4: Точность
+        { id: "r4c1", text: "Оценка на основании объектов-аналогов, экспертная оценка<br><br>-20% ÷ -50%<br><br>+30% ÷ +100%" },
+        { id: "r4c2", text: "Оценка на основании объектов-аналогов<br><br>-15% ÷ -30%<br><br>+20% ÷ +50%" },
+        { id: "r4c3", text: "Оценка на основании укрупненных стоимостных показателей, комбинированные методы оценки<br><br>-10% ÷ -20%<br><br>+10% ÷ +30%" },
+        { id: "r4c4", text: "Оценка на основании единичных расценок (по предварительным объемам работ)<br><br>-5% ÷ -15%<br><br>+5% ÷ +20%" },
+        
+        // Строка 5: Детализация
+        { id: "r5c1", text: "Нет. В редких случаях LOD 100" },
+        { id: "r5c2", text: "LOD 200" },
+        { id: "r5c3", text: "LOD 300" },
+        { id: "r5c4", text: "LOD 400+ / LOD 500" },
+        
+        // Строка 6: Изыскания
+        { id: "r6c1", text: "Маркетинговые" },
+        { id: "r6c2", text: "Проблемные геологические и экологические" },
+        { id: "r6c3", text: "Геодезия. Геология под каждый объект и по сетке. Экология. Гидромет. Геотехнические обследования." },
+        { id: "r6c4", text: "Дополнительные и уточняющие геодезические и геологические изыскания." }
+    ];
+
+    let selectedCard = null;
+
+    // Перемешивание (Фишер-Йетс)
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        const pool = document.getElementById('pool');
+        const shuffled = shuffle([...matrixData]);
+        
+        shuffled.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('draggable', 'true');
+            card.dataset.targetId = item.id;
+            card.innerHTML = item.text;
+            pool.appendChild(card);
+        });
+
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone');
+        const poolContainer = document.getElementById('pool-container');
+
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+                if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', (e) => {
+                if (selectedCard) {
+                    if (zone.hasAttribute('data-target') && zone.children.length > 0) {
+                        document.getElementById('pool').appendChild(zone.children[0]);
+                    }
+                    
+                    if (zone.id === 'pool-container') {
+                        document.getElementById('pool').appendChild(selectedCard);
+                    } else {
+                        zone.appendChild(selectedCard);
+                        zone.classList.remove('empty');
+                    }
+                    
+                    selectedCard.classList.remove('selected');
+                    selectedCard = null;
+                    checkEmptyZones();
+                } else {
+                    if (zone.hasAttribute('data-target') && zone.children.length > 0) {
+                        document.getElementById('pool').appendChild(zone.children[0]);
+                        checkEmptyZones();
+                    }
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const draggable = document.querySelector('.dragging');
+                
+                if (draggable) {
+                    if (zone.hasAttribute('data-target') && zone.children.length > 0) {
+                        document.getElementById('pool').appendChild(zone.children[0]);
+                    }
+                    
+                    if (zone.id === 'pool-container') {
+                        document.getElementById('pool').appendChild(draggable);
+                    } else {
+                        zone.appendChild(draggable);
+                        zone.classList.remove('empty');
+                    }
+                    checkEmptyZones();
+                }
+            });
+        });
+    }
+
+    function checkEmptyZones() {
+        document.querySelectorAll('.dropzone[data-target]').forEach(zone => {
+            if (zone.children.length === 0) {
+                zone.classList.add('empty');
+            } else {
+                zone.classList.remove('empty');
+            }
+        });
+    }
+
+    document.getElementById('check-btn').addEventListener('click', () => {
+        const pool = document.getElementById('pool');
+        const feedback = document.getElementById('feedback');
+        
+        document.querySelectorAll('.dropzone').forEach(z => {
+            z.classList.remove('error-highlight', 'success-highlight');
+        });
+        
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Пожалуйста, распределите все карточки из верхнего блока по ячейкам таблицы.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        
+        document.querySelectorAll('.dropzone[data-target]').forEach(zone => {
+            const card = zone.querySelector('.card');
+            const targetId = zone.dataset.target;
+            
+            if (!card || card.dataset.targetId !== targetId) {
+                isCorrect = false;
+                zone.classList.add('error-highlight');
+            } else {
+                zone.classList.add('success-highlight');
+            }
+        });
+
+        if (isCorrect) {
+            feedback.innerHTML = '<strong>Отлично!</strong> Вы правильно сопоставили все документы, объемы работ и параметры с этапами жизненного цикла проекта.';
+            feedback.className = 'feedback success';
+            document.getElementById('check-btn').style.display = 'none';
+            
+            document.querySelectorAll('.card').forEach(c => { 
+                c.removeAttribute('draggable'); 
+                c.style.cursor = 'default'; 
+            });
+            document.querySelectorAll('.dropzone').forEach(z => z.style.pointerEvents = 'none');
+            
+        } else {
+            feedback.innerHTML = '<strong>В матрице есть ошибки.</strong> Неверно заполненные ячейки подсвечены красным. Верните карточки из них в пул и попробуйте снова.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>
