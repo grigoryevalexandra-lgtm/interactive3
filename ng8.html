@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Семинар по обзору технологичности</title>
+<style>
+    :root {
+        --primary: #20768c; /* Цвет из макета (До семинара) */
+        --primary-hover: #155b6d;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #1e293b;
+        --border-color: #cbd5e1;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fef2f2;
+        --error-border: #ef4444;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-card);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+        overflow-x: hidden;
+    }
+
+    .widget-container {
+        width: 100%;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    h3 { margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #0f172a; line-height: 1.3; }
+
+    /* Контейнер задания */
+    .task-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        position: relative;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Блокировка (замочек) */
+    .locked { opacity: 0.6; pointer-events: none; user-select: none; }
+    .unlocked .lock-overlay { display: none; }
+    
+    .lock-overlay {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(3px);
+        z-index: 10; display: flex; align-items: center; justify-content: center;
+        border-radius: 8px;
+    }
+
+    .lock-message {
+        background: white; padding: 10px 20px; border-radius: 20px;
+        font-size: 13px; font-weight: 600; color: #475569;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #cbd5e1;
+        display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Пул карточек */
+    .pool {
+        border: 2px dashed #94a3b8; border-radius: 6px; padding: 10px;
+        background: var(--bg-main); margin-bottom: 12px;
+        min-height: 50px; display: flex; flex-wrap: wrap; gap: 6px;
+        align-items: center; justify-content: center;
+    }
+
+    /* Карточки */
+    .card {
+        background: var(--bg-card); border: 1px solid var(--primary);
+        color: #0f172a; padding: 6px 10px; border-radius: 4px;
+        font-size: 11px; font-weight: 500; cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none;
+        transition: transform 0.1s, border-color 0.2s;
+        text-align: center; max-width: 100%; line-height: 1.2;
+    }
+
+    .card:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .card.dragging { opacity: 0.5; transform: scale(0.98); }
+    .card.selected { background: #e0f2fe; border-width: 2px; padding: 5px 9px; border-color: #0284c7; }
+
+    /* Сетки для заданий (эластичные) */
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    
+    .col-header {
+        background: var(--primary); color: white; text-align: center;
+        font-size: 12px; font-weight: 600; padding: 8px;
+        border-radius: 4px 4px 0 0; line-height: 1.2;
+    }
+
+    /* Зоны сброса */
+    .dropzone {
+        min-height: 80px; border: 1px dashed var(--border-color);
+        border-top: none; border-radius: 0 0 4px 4px; background: #f1f5f9;
+        display: flex; flex-direction: column; gap: 6px; padding: 8px;
+        transition: background 0.2s, border-color 0.2s; align-items: stretch;
+    }
+    
+    .dropzone .card { width: 100%; margin: 0; box-sizing: border-box; }
+    .dropzone.drag-over { background: #e0f2fe; border: 1px dashed var(--primary); border-top: none; }
+    
+    /* Кнопки и фидбек */
+    .controls { margin-top: 16px; }
+    button {
+        display: block; width: 100%; background: var(--primary); color: white;
+        border: none; padding: 12px; border-radius: 6px; font-size: 14px;
+        font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    button:hover { background: var(--primary-hover); }
+
+    .feedback {
+        margin-top: 8px; padding: 10px; border-radius: 6px; font-weight: 500;
+        font-size: 13px; text-align: center; display: none;
+    }
+    .feedback.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .feedback.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
+
+    .card.error-highlight { border-color: var(--error-border) !important; background: var(--error-bg); }
+    .card.success-highlight { border-color: var(--success-border) !important; background: var(--success-bg); }
+
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    
+    <!-- ЗАДАНИЕ 1 (Открыто сразу) -->
+    <div class="task-container unlocked" id="task1">
+        <h3>1) Распределите задачи по стадиям процесса определения показателей качества проектируемого объекта</h3>
+        <div class="pool dropzone" data-task="1" id="pool1"></div>
+        <div class="grid-3">
+            <div>
+                <div class="col-header">До семинара</div>
+                <div class="dropzone" data-task="1" data-target="before"></div>
+            </div>
+            <div>
+                <div class="col-header" style="background: #258197;">Семинар</div>
+                <div class="dropzone" data-task="1" data-target="during"></div>
+            </div>
+            <div>
+                <div class="col-header" style="background: #2a8da3;">После семинара</div>
+                <div class="dropzone" data-task="1" data-target="after"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="checkTask(1)" id="btn1">Проверить 1 задание</button>
+            <div class="feedback" id="feedback1"></div>
+        </div>
+    </div>
+
+    <!-- ЗАДАНИЕ 2 (Заблокировано) -->
+    <div class="task-container locked" id="task2">
+        <div class="lock-overlay"><div class="lock-message">🔒 Сначала пройдите первое задание</div></div>
+        <h3>2) Кого бы вы позвали на семинар по обзору технологичности строительства?</h3>
+        <div class="pool dropzone" data-task="2" id="pool2"></div>
+        <div class="grid-2">
+            <div>
+                <div class="col-header" style="background: #0ea5e9;">На семинар!</div>
+                <div class="dropzone" data-task="2" data-target="invite"></div>
+            </div>
+            <div>
+                <div class="col-header" style="background: #64748b;">Пусть сидит работает</div>
+                <div class="dropzone" data-task="2" data-target="work"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="checkTask(2)" id="btn2">Проверить 2 задание</button>
+            <div class="feedback" id="feedback2"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const data = {
+        task1: [
+            { id: "t1_1", text: "Подбор команды обзора технологичности строительства", target: "before" },
+            { id: "t1_2", text: "Подготовка данных", target: "before" },
+            { id: "t1_3", text: "Рассмотрение подготовительных материалов", target: "before" },
+            { id: "t1_4", text: "Информация", target: "during" },
+            { id: "t1_5", text: "Инструменты технологичности строительства", target: "during" },
+            { id: "t1_6", text: "Изучение выводов", target: "during" },
+            { id: "t1_7", text: "Изучение рекомендаций", target: "during" },
+            { id: "t1_8", text: "Отчет по обзору технологичности строительства", target: "after" },
+            { id: "t1_9", text: "Программа технологичности строительства", target: "after" },
+            { id: "t1_10", text: "Последующие мероприятия", target: "after" }
+        ],
+        task2: [
+            { id: "t2_1", text: "Координатор проекта", target: "invite" },
+            { id: "t2_2", text: "Менеджер по строительству", target: "invite" },
+            { id: "t2_3", text: "Руководитель проекта", target: "invite" },
+            { id: "t2_4", text: "Представитель службы закупок", target: "invite" },
+            { id: "t2_5", text: "Представитель по эксплуатации", target: "invite" },
+            { id: "t2_6", text: "Инженеры проекта и инженеры по дисциплинам", target: "invite" },
+            { id: "t2_7", text: "Представители подрядчиков/основных субподрядчиков", target: "invite" },
+            { id: "t2_8", text: "Представитель службы ОТ, ПБ и ООС", target: "invite" },
+            { id: "t2_9", text: "Представители по обеспечению/контролю качества", target: "invite" },
+            { id: "t2_10", text: "Сметчик", target: "work" },
+            { id: "t2_11", text: "Специалист технического документооборота", target: "work" },
+            { id: "t2_12", text: "Руководитель канцелярии проектного института", target: "work" }
+        ]
+    };
+
+    let selectedCard = null;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        [1, 2].forEach(taskNum => {
+            const pool = document.getElementById(`pool${taskNum}`);
+            const shuffled = shuffle([...data[`task${taskNum}`]]);
+            
+            shuffled.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('draggable', 'true');
+                card.dataset.task = taskNum;
+                card.dataset.target = item.target;
+                card.textContent = item.text;
+                pool.appendChild(card);
+            });
+        });
+
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    if(card.getAttribute('draggable') === 'true') {
+                        selectedCard = card;
+                        card.classList.add('selected');
+                    }
+                }
+            });
+
+            card.addEventListener('dragstart', (e) => {
+                if(card.getAttribute('draggable') === 'true') {
+                    card.classList.add('dragging');
+                    if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+                } else {
+                    e.preventDefault();
+                }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        dropzones.forEach(zone => {
+            zone.addEventListener('click', (e) => {
+                if (selectedCard && selectedCard.dataset.task === zone.dataset.task) {
+                    zone.appendChild(selectedCard);
+                    selectedCard.classList.remove('selected');
+                    selectedCard.classList.remove('error-highlight');
+                    selectedCard = null;
+                }
+            });
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const dragging = document.querySelector('.dragging');
+                if (dragging && dragging.dataset.task === zone.dataset.task) {
+                    zone.classList.add('drag-over');
+                }
+            });
+
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const dragging = document.querySelector('.dragging');
+                
+                if (dragging && dragging.dataset.task === zone.dataset.task) {
+                    zone.appendChild(dragging);
+                    dragging.classList.remove('error-highlight');
+                }
+            });
+        });
+    }
+
+    window.checkTask = function(taskNum) {
+        const pool = document.getElementById(`pool${taskNum}`);
+        const feedback = document.getElementById(`feedback${taskNum}`);
+        const taskContainer = document.getElementById(`task${taskNum}`);
+        const cards = taskContainer.querySelectorAll('.card');
+        
+        cards.forEach(c => c.classList.remove('error-highlight', 'success-highlight'));
+
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Сперва распределите все карточки из верхнего блока.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isCorrect = true;
+        
+        taskContainer.querySelectorAll('.dropzone:not(.pool)').forEach(zone => {
+            const zoneTarget = zone.dataset.target;
+            const zoneCards = zone.querySelectorAll('.card');
+            
+            zoneCards.forEach(card => {
+                if (card.dataset.target !== zoneTarget) {
+                    isCorrect = false;
+                    card.classList.add('error-highlight');
+                } else {
+                    card.classList.add('success-highlight');
+                }
+            });
+        });
+
+        if (isCorrect) {
+            feedback.innerHTML = '<strong>Верно!</strong> Задание выполнено успешно.';
+            feedback.className = 'feedback success';
+            document.getElementById(`btn${taskNum}`).style.display = 'none';
+            
+            cards.forEach(c => { 
+                c.removeAttribute('draggable'); 
+                c.style.cursor = 'default'; 
+            });
+
+            // Разблокировка второго задания
+            if (taskNum === 1) {
+                const nextTask = document.getElementById('task2');
+                nextTask.classList.remove('locked');
+                nextTask.classList.add('unlocked');
+            }
+            
+        } else {
+            feedback.innerHTML = '<strong>Есть ошибки.</strong> Неверные карточки выделены красным. Верните их в пул и попробуйте снова.';
+            feedback.className = 'feedback error';
+        }
+    };
+
+    init();
+</script>
+</body>
+</html>
