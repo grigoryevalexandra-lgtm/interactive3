@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Интерактив: Схема управления изменениями</title>
+<title>Интерактив: Схема управления изменениями (Компактная)</title>
 <style>
     :root {
         --primary: #1e40af;
@@ -13,13 +13,13 @@
         --text-main: #0f172a;
         --border-color: #cbd5e1;
         --header-bg: #1e293b;
-        
         --success-bg: #ecfdf5;
         --success-border: #10b981;
         --error-bg: #fef2f2;
         --error-border: #ef4444;
     }
 
+    /* Сброс для идеальной встройки в iframe */
     html, body {
         margin: 0;
         padding: 0;
@@ -28,28 +28,29 @@
         background-color: var(--bg-card);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         color: var(--text-main);
+        overflow: hidden; /* Избегаем двойных скроллов */
     }
 
     .widget-container {
         width: 100%;
-        padding: 12px;
+        height: 100vh;
+        padding: 6px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        height: 100vh;
     }
 
-    h3 { margin: 0 0 6px 0; font-size: 16px; color: #0f172a; }
-    p.instruction { color: #475569; font-size: 12px; margin-bottom: 12px; line-height: 1.4; }
+    h3 { margin: 0 0 4px 0; font-size: 14px; color: #0f172a; }
+    p.instruction { color: #475569; font-size: 11px; margin-bottom: 8px; line-height: 1.3; }
 
     /* Пул карточек */
     .pool-container {
         border: 2px dashed #94a3b8;
         border-radius: 6px;
-        padding: 8px;
+        padding: 6px;
         background: var(--bg-main);
-        margin-bottom: 12px;
-        max-height: 180px;
+        margin-bottom: 8px;
+        max-height: 150px;
         overflow-y: auto;
         flex-shrink: 0;
     }
@@ -57,18 +58,18 @@
     .pool {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 4px;
         justify-content: flex-start;
     }
 
-    /* Карточки (элементы перетаскивания) */
+    /* Карточки (ультра-компактные) */
     .card {
         background: var(--bg-card);
-        border: 2px solid var(--primary);
+        border: 1px solid var(--primary);
         color: #0f172a;
-        padding: 6px 8px;
-        border-radius: 4px;
-        font-size: 10px;
+        padding: 4px 6px;
+        border-radius: 3px;
+        font-size: 9px; /* Сжатый шрифт для влезания в ячейки */
         font-weight: 600;
         cursor: pointer;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -77,34 +78,39 @@
         box-sizing: border-box;
         text-align: center;
         max-width: 100%;
-        line-height: 1.2;
+        line-height: 1.1;
+        word-wrap: break-word;
+        hyphens: auto;
     }
 
     .card:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .card.dragging { opacity: 0.5; transform: scale(0.98); }
     .card.selected { background: #dbeafe; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3); }
 
-    /* Контейнер схемы с горизонтальным скроллом */
+    /* Контейнер схемы */
     .flowchart-wrapper {
         flex-grow: 1;
-        overflow: auto;
+        overflow-y: auto;
+        overflow-x: hidden; /* Запрет горизонтального скролла */
         border: 1px solid var(--border-color);
         border-radius: 6px;
         background: var(--bg-main);
         position: relative;
     }
 
-    /* СЕТКА СХЕМЫ (CSS Grid) */
+    /* СЕТКА СХЕМЫ (Эластичная) */
     .flowchart-grid {
         display: grid;
-        grid-template-columns: repeat(7, minmax(130px, 1fr));
-        grid-template-rows: 40px repeat(12, minmax(65px, auto));
-        min-width: 900px; /* Принудительная ширина для сохранения структуры */
+        /* minmax(0, 1fr) позволяет колонкам сжиматься бесконечно, не ломая сетку */
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        grid-auto-rows: minmax(40px, auto); /* Компактные ряды */
+        width: 100%;
+        min-width: 500px; /* Минимальная ширина, отлично влезает в айфрейм */
         position: relative;
-        padding-bottom: 20px;
+        padding-bottom: 15px;
     }
 
-    /* Фоны дорожек (Swimlanes) */
+    /* Фоны дорожек */
     .swimlane-bg { border-right: 1px solid #cbd5e1; grid-row: 1 / 14; }
     .swimlane-bg:last-child { border-right: none; }
 
@@ -115,33 +121,35 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 10px;
+        font-size: 8px; /* Мелкий шрифт для длинных названий ролей */
         font-weight: 600;
         text-align: center;
-        padding: 4px;
+        padding: 4px 2px;
         border-right: 1px solid #475569;
         grid-row: 1;
         z-index: 2;
+        word-wrap: break-word;
+        line-height: 1.1;
     }
 
-    /* Обертка для узла схемы (чтобы позиционировать стрелки) */
+    /* Обертка для позиционирования */
     .node-wrapper {
         position: relative;
-        padding: 8px;
+        padding: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 5;
     }
 
-    /* Зоны сброса (пустые ячейки схемы) */
+    /* Зоны сброса */
     .dropzone {
         width: 100%;
         height: 100%;
-        min-height: 40px;
-        border: 2px dashed #94a3b8;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.5);
+        min-height: 35px; /* Уменьшенная высота */
+        border: 1px dashed #94a3b8;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -149,95 +157,59 @@
     }
 
     .dropzone.drag-over { background: #e0e7ff; border-color: var(--primary); }
-    .dropzone.empty::before {
-        content: 'Пусто';
-        color: #94a3b8;
-        font-size: 10px;
-    }
+    .dropzone.empty::before { content: 'Пусто'; color: #94a3b8; font-size: 8px; }
+    .dropzone .card { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; }
 
-    .dropzone .card {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    /* СТРЕЛКИ И ЛИНИИ */
+    .a-d::after { content: '↓'; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); color: var(--primary); font-weight: bold; font-size: 12px; }
+    .a-r::after { content: '→'; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: bold; font-size: 12px; z-index: 10; }
+    .a-l::after { content: '←'; position: absolute; left: -6px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: bold; font-size: 12px; z-index: 10; }
 
-    /* СТИЛИЗАЦИЯ СТРЕЛОК (Псевдоэлементы) */
-    .a-d::after { /* Arrow Down */
-        content: '↓'; position: absolute; bottom: -12px; left: 50%;
-        transform: translateX(-50%); color: var(--primary); font-weight: bold; font-size: 14px;
-    }
-    .a-r::after { /* Arrow Right */
-        content: '→'; position: absolute; right: -8px; top: 50%;
-        transform: translateY(-50%); color: var(--primary); font-weight: bold; font-size: 14px;
-    }
-    .a-l::after { /* Arrow Left */
-        content: '←'; position: absolute; left: -8px; top: 50%;
-        transform: translateY(-50%); color: var(--primary); font-weight: bold; font-size: 14px;
-    }
-
-    /* Специальные соединительные линии */
-    .line-h {
-        position: absolute; height: 2px; background: var(--primary);
-        top: 50%; z-index: 1;
-    }
-    .line-v {
-        position: absolute; width: 2px; background: var(--primary);
-        left: 50%; z-index: 1;
-    }
+    .line-h { position: absolute; height: 2px; background: var(--primary); top: 50%; z-index: 1; }
+    .line-v { position: absolute; width: 2px; background: var(--primary); left: 50%; z-index: 1; }
 
     /* Широкий блок (спан колонок) */
-    .wide-node { grid-column: 1 / 6; }
+    .wide-node { grid-column: 1 / 6; padding: 4px 10%; }
     
     /* Ромб (Визуализация решения) */
-    .diamond-box .dropzone {
-        border-radius: 12px;
-        border: 2px dashed #f59e0b; /* Оранжевый цвет для решения */
-        background: #fffbeb;
-    }
+    .diamond-box .dropzone { border-radius: 8px; border: 2px dashed #f59e0b; background: #fffbeb; }
     .diamond-box .dropzone.empty::before { content: 'Решение'; color: #d97706; }
 
     /* Панель управления */
-    .controls { margin-top: 10px; flex-shrink: 0; }
+    .controls { margin-top: 6px; flex-shrink: 0; }
     button {
         display: block; width: 100%; background: var(--primary); color: white;
-        border: none; padding: 10px; border-radius: 6px; font-size: 14px;
+        border: none; padding: 8px; border-radius: 4px; font-size: 13px;
         font-weight: 600; cursor: pointer; transition: background 0.2s;
     }
     button:hover { background: var(--primary-hover); }
 
     .feedback {
-        margin-top: 8px; padding: 10px; border-radius: 6px; font-weight: 500;
-        font-size: 12px; text-align: center; display: none;
+        margin-top: 6px; padding: 8px; border-radius: 4px; font-weight: 500;
+        font-size: 11px; text-align: center; display: none;
     }
     .feedback.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
     .feedback.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
 
-    /* Подсветка ошибок */
     .dropzone.error-highlight { border-color: var(--error-border); background: var(--error-bg); }
     .dropzone.success-highlight { border-color: var(--success-border); background: var(--success-bg); }
 
-    ::-webkit-scrollbar { height: 6px; width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    /* Скроллбары */
+    ::-webkit-scrollbar { height: 4px; width: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 </style>
 </head>
 <body>
 
 <div class="widget-container">
-    <h3>Схема: Процесс управления изменениями</h3>
-    <p class="instruction">
-        Восстановите блок-схему. Перетаскивайте карточки из пула в пустые блоки на сетке.
-    </p>
+    <h3>Схема: Управление изменениями</h3>
+    <p class="instruction">Перетаскивайте карточки из пула в пустые блоки на сетке, восстанавливая логику процесса.</p>
 
-    <!-- Пул карточек -->
     <div class="pool-container dropzone" id="pool-container">
         <div class="pool" id="pool"></div>
     </div>
 
-    <!-- Сетка Схемы -->
     <div class="flowchart-wrapper">
         <div class="flowchart-grid">
             <!-- Фоны дорожек -->
@@ -249,13 +221,13 @@
             <div class="swimlane-bg" style="grid-column: 6;"></div>
             <div class="swimlane-bg" style="grid-column: 7;"></div>
 
-            <!-- Заголовки (Row 1) -->
+            <!-- Заголовки -->
             <div class="header" style="grid-column: 1;">Инициатор</div>
             <div class="header" style="grid-column: 2;">Проектная группа</div>
             <div class="header" style="grid-column: 3;">Технический Руководитель ПРОЕКТА</div>
             <div class="header" style="grid-column: 4;">Менеджер по контролю за реализацией</div>
             <div class="header" style="grid-column: 5;">Менеджер проекта по сопровождению</div>
-            <div class="header" style="grid-column: 6;">Директор проекта (PD) / РП (PM)</div>
+            <div class="header" style="grid-column: 6;">Директор (PD) / РП (PM)</div>
             <div class="header" style="grid-column: 7;">Заказчик</div>
 
             <!-- Узлы Схемы -->
@@ -270,24 +242,24 @@
             <!-- R4 -->
             <div class="node-wrapper" style="grid-column: 1; grid-row: 4;">
                 <div class="dropzone empty" data-target="c3"></div>
-                <!-- Длинная линия вправо -->
+                <!-- Линия вправо на 4 колонки (400%) -->
                 <div class="line-h" style="left: 100%; width: 380%; top: 50%;"></div>
             </div>
             <div class="node-wrapper" style="grid-column: 5; grid-row: 4;">
                 <div class="dropzone empty" data-target="c9"></div>
             </div>
             <!-- R5 (Широкий блок) -->
-            <div class="node-wrapper wide-node a-d" style="grid-row: 5;">
-                <div class="dropzone empty" style="border-width: 3px;" data-target="c6"></div>
-                <!-- Стрелка вниз сдвинута к колонке 2 -->
-                <div class="line-v" style="height: 15px; bottom: -15px; left: 25%;"></div>
+            <div class="node-wrapper wide-node" style="grid-row: 5;">
+                <div class="dropzone empty" style="border-width: 2px;" data-target="c6"></div>
+                <!-- Линия вниз к ромбу (от центра 2 колонки = 25% ширины блока) -->
+                <div class="line-v" style="height: 15px; bottom: -15px; left: 30%;"></div>
             </div>
             <!-- R6 (Ромб/Решение) -->
             <div class="node-wrapper diamond-box" style="grid-column: 2; grid-row: 6;">
                 <div class="dropzone empty" data-target="c4"></div>
-                <!-- Линия от решения вправо и вниз к колонке 5 -->
+                <!-- Линия "Есть" от решения вправо на 3 колонки и вниз -->
                 <div class="line-h" style="left: 100%; width: 280%; top: 50%;"></div>
-                <div class="line-v" style="left: 380%; top: 50%; height: 50px;"></div>
+                <div class="line-v" style="left: 380%; top: 50%; height: 40px;"></div>
             </div>
             <!-- R7 -->
             <div class="node-wrapper a-d" style="grid-column: 5; grid-row: 7;">
@@ -309,8 +281,8 @@
             <!-- R9 -->
             <div class="node-wrapper" style="grid-column: 5; grid-row: 9;">
                 <div class="dropzone empty" data-target="c12"></div>
-                <!-- Линия обратно от C6R8 -->
-                <div class="line-v" style="left: 150%; top: -30px; height: 50px;"></div>
+                <!-- Обратная линия от C15 (Col 6) к C12 (Col 5) -->
+                <div class="line-v" style="left: 150%; top: -20px; height: 40px;"></div>
                 <div class="line-h" style="left: 100%; width: 50%; top: 50%;"></div>
             </div>
             <!-- R10 -->
@@ -327,7 +299,6 @@
             <!-- R12 -->
             <div class="node-wrapper a-l" style="grid-column: 6; grid-row: 12;">
                 <div class="dropzone empty" data-target="c17"></div>
-                <!-- Линия от Заказчика влево -->
                 <div class="line-h" style="left: 100%; width: 80%; top: 50%;"></div>
             </div>
             <!-- R13 -->
@@ -347,7 +318,6 @@
 </div>
 
 <script>
-    // Данные карточек (ID совпадают с data-target в HTML)
     const cardsData = [
         { id: "c1", text: "Идентификация отклонения от Контракта" },
         { id: "c2", text: "Сбор подтверждающих документов" },
@@ -512,7 +482,7 @@
         });
 
         if (isCorrect) {
-            feedback.innerHTML = '<strong>Отлично!</strong> Блок-схема процесса собрана без единой ошибки.';
+            feedback.innerHTML = '<strong>Отлично!</strong> Блок-схема процесса собрана без ошибок.';
             feedback.className = 'feedback success';
             document.getElementById('check-btn').style.display = 'none';
             
@@ -523,7 +493,7 @@
             document.querySelectorAll('.dropzone').forEach(z => z.style.pointerEvents = 'none');
             
         } else {
-            feedback.innerHTML = '<strong>Есть ошибки.</strong> Неверно установленные узлы подсвечены красным. Верните их в пул и попробуйте снова.';
+            feedback.innerHTML = '<strong>Есть ошибки.</strong> Неверные узлы подсвечены красным. Верните их в пул и попробуйте снова.';
             feedback.className = 'feedback error';
         }
     });
