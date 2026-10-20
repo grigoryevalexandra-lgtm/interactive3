@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Интерактив 1. Тренажёр: рассортируйте документы (можно / доверенный / нельзя)</title>
+<style>
+  :root{--bg:#ffffff;--card:#faf8f5;--card2:#f3efe9;--ink:#1a1814;--muted:#6f7280;--line:#e9e4dc;--brand:#e2231a;--blue:#237cf9;--green:#1f9d57;--font:'Proxima Nova','Helvetica Neue','Segoe UI',Arial,system-ui,sans-serif}
+  *{box-sizing:border-box}
+  html,body{overflow-x:hidden}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;-webkit-font-smoothing:antialiased}
+  h2{font-size:21px;margin:2px 0 12px;font-weight:800;letter-spacing:-.01em}
+  p{margin:0 0 12px}.muted{color:var(--muted)}
+  .btn{appearance:none;border:none;cursor:pointer;font-weight:700;border-radius:10px;padding:11px 17px;font-size:14px;background:var(--blue);color:#fff;transition:.15s}
+  .btn:hover{filter:brightness(.95)}.btn:disabled{opacity:.45;cursor:not-allowed}
+  .note{font-size:13.5px;color:#7a5b16;background:#fdf6e3;border:1px solid #f3e3b3;border-radius:12px;padding:12px 14px;margin-top:14px}
+  .note.green{color:#157a41;background:#eef8f1;border-color:#cdebd8}
+  .legend{font-size:12.5px;color:var(--muted);margin:4px 0 14px}.legend b{color:var(--ink)}
+  .doc-s{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:10px 0}
+  .doc-s .dt{font-weight:700;font-size:14px;margin-bottom:9px}
+  .doc-s .opts{display:flex;gap:8px;flex-wrap:wrap}
+  .opt-s{cursor:pointer;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:7px 13px;font-size:12.5px;color:var(--muted);font-weight:600;transition:.12s}
+  .opt-s:hover{border-color:var(--ink);color:var(--ink)}
+  .opt-s.sel{border-color:var(--ink);color:var(--ink);background:#fff;box-shadow:inset 0 0 0 1px var(--ink)}
+  .doc-s.right{border-color:var(--green);background:#eef8f1}.doc-s.wrong{border-color:var(--brand);background:#fdf0ef}
+  .doc-s .res{font-size:12.5px;margin-top:10px;display:none}.doc-s .res.show{display:block}
+  .doc-s.right .res{color:#157a41}.doc-s.wrong .res{color:#a3201a}
+  .scorebar{font-size:14px;font-weight:800;margin-left:10px}
+</style>
+</head>
+<body>
+<div style="max-width:900px;margin:0 auto;padding:16px">
+
+  <h2>Рассортируйте документы</h2>
+  <p class="muted">Шесть документов кейса «Уютный дом на Матвеева» — разложите их по трём корзинам. Выберите вариант для каждого, затем нажмите «Проверить».</p>
+  <div class="legend">Корзины: <b>Можно</b> — в любой ИИ · <b>Доверенный</b> — только корпоративный/проверенный ИИ · <b>Нельзя</b> — ни в какой внешний сервис.</div>
+
+  <div id="sorterWrap"></div>
+
+  <div style="margin-top:6px">
+    <button class="btn" id="sortCheck" disabled>Проверить</button>
+    <span class="scorebar" id="sortScore"></span>
+  </div>
+
+  <div class="note green" id="sorterOut" style="display:none">
+    ✅ <b>Вывод:</b> открытые нормативы и обезличенные тексты — можно; персональные данные и коммерческая тайна — только в доверенный ИИ; самое чувствительное (паспорта, подписанные договоры с суммами) — никуда вовне. Сомневаетесь — обезличьте.
+  </div>
+
+</div>
+<script>
+/* ── BLOCK: SORTER — сортировщик документов «можно / доверенный / нельзя» ── */
+(function(){
+  var sorterWrap=document.getElementById('sorterWrap');if(!sorterWrap)return;
+  var DOCS=[
+    {t:"Скан паспорта прораба Иванова И.И. (из ведомости персонала)",c:"no",r:"Особо чувствительные ПДн — никуда во внешний ИИ."},
+    {t:"Подписанный договор подряда с ООО «СтройМонолит» (суммы, реквизиты)",c:"no",r:"Юрзначимый документ + коммерческая тайна — не выгружаем вовне."},
+    {t:"Ведомость персонала секции 2 (ФИО, телефоны)",c:"trusted",r:"ПДн сотрудников — только в доверенный/корпоративный ИИ."},
+    {t:"Смета (ЛСР) с ценами по монолиту секции 2",c:"trusted",r:"Коммерческая тайна — только доверенный ИИ."},
+    {t:"Текст СП 70.13330.2012 (открытый норматив)",c:"free",r:"Публичный документ — можно в любой ИИ."},
+    {t:"Черновик ответа на предписание № 57 без ФИО и сумм",c:"free",r:"Обезличенный текст — можно."}
+  ];
+  var BIN={free:"Можно",trusted:"Доверенный",no:"Нельзя"};
+  var choice={};
+  DOCS.forEach(function(d,i){
+    var el=document.createElement('div');el.className='doc-s';el.dataset.i=i;
+    var optsHtml='';
+    Object.keys(BIN).forEach(function(k){optsHtml+='<button class="opt-s" data-k="'+k+'">'+BIN[k]+'</button>';});
+    el.innerHTML='<div class="dt">📄 '+d.t+'</div><div class="opts">'+optsHtml+'</div><div class="res"></div>';
+    el.querySelectorAll('.opt-s').forEach(function(o){
+      o.addEventListener('click',function(){
+        if(el.classList.contains('right')||el.classList.contains('wrong'))return;
+        el.querySelectorAll('.opt-s').forEach(function(x){x.classList.remove('sel');});
+        o.classList.add('sel');choice[i]=o.dataset.k;
+        document.getElementById('sortCheck').disabled=Object.keys(choice).length<DOCS.length;
+      });
+    });
+    sorterWrap.appendChild(el);
+  });
+  document.getElementById('sortCheck').addEventListener('click',function(){
+    var ok=0;
+    DOCS.forEach(function(d,i){
+      var el=sorterWrap.querySelector('.doc-s[data-i="'+i+'"]');
+      var good=choice[i]===d.c; if(good)ok++;
+      el.classList.add(good?'right':'wrong');
+      var res=el.querySelector('.res');res.classList.add('show');
+      res.textContent=(good?'✓ ':'✗ Верно: «'+BIN[d.c]+'». ')+d.r;
+    });
+    var s=document.getElementById('sortScore');
+    s.textContent=' '+ok+' из '+DOCS.length;
+    s.style.color = ok===DOCS.length?'var(--green)':'var(--brand)';
+    document.getElementById('sortCheck').disabled=true;
+    document.getElementById('sorterOut').style.display='block';
+  });
+})();
+</script>
+</body>
+</html>
