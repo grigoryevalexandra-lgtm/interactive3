@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Архитектура ИТ-систем проектирования</title>
+<style>
+    :root {
+        --primary: #2b849b;
+        --primary-hover: #1e6679;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --border-color: #cbd5e1;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fef2f2;
+        --error-border: #ef4444;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .widget-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    }
+
+    /* Верхняя панель: Палитра и управление */
+    .top-panel {
+        padding: 12px 16px;
+        background: var(--bg-card);
+        border-bottom: 2px solid var(--border-color);
+        z-index: 30;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        flex-shrink: 0;
+    }
+
+    .top-panel h3 { margin: 0 0 6px 0; font-size: 14px; color: #0f172a; line-height: 1.3; }
+    .top-panel p { color: #64748b; font-size: 11px; margin: 0 0 10px 0; line-height: 1.3; }
+
+    /* Палитра карточек ПО */
+    .palette {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        background: #f1f5f9;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px dashed #94a3b8;
+        min-height: 40px;
+        align-items: center;
+    }
+
+    .card {
+        background: #ffffff;
+        border: 1px solid var(--primary);
+        color: #0f172a;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        text-align: center;
+        z-index: 50;
+    }
+
+    .card:hover { transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+    .card.dragging { opacity: 0.5; transform: scale(0.95); }
+    .card.selected { 
+        background: #e0f2fe; 
+        border-width: 2px; 
+        padding: 5px 9px; 
+        border-color: #0284c7; 
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+    }
+
+    /* Кнопки и статус */
+    .controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-group { display: flex; gap: 8px; }
+
+    button {
+        border: none;
+        padding: 8px 14px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .btn-check { background: var(--primary); color: white; }
+    .btn-check:hover { background: var(--primary-hover); }
+    .btn-reset { background: #e2e8f0; color: #475569; }
+    .btn-reset:hover { background: #cbd5e1; }
+
+    .status-msg {
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        display: none;
+    }
+    .status-msg.info { display: block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .status-msg.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .status-msg.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
+
+    /* Область диаграммы (Скроллируемая для мобилок) */
+    .diagram-scroll-area {
+        flex-grow: 1;
+        overflow: auto;
+        position: relative;
+        background: #fafcff;
+    }
+
+    .diagram-container {
+        position: relative;
+        min-width: 850px; /* Чтобы схема не сжималась в кашу на мобилках */
+        min-height: 500px;
+        height: 100%;
+        margin: 0 auto;
+    }
+
+    /* SVG для стрелок */
+    #svg-layer {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    /* Узлы (Зоны сброса) */
+    .node-dropzone {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        background: #ffffff;
+        border: 1px dashed #94a3b8;
+        border-radius: 6px;
+        width: 140px;
+        min-height: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 6px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        z-index: 20;
+        transition: background 0.2s, border-color 0.2s;
+        cursor: pointer;
+    }
+
+    .node-dropzone:hover { border-color: var(--primary); background: #f8fafc; }
+    .node-dropzone.drag-over { background: #e0f2fe; border: 2px dashed #0284c7; padding: 5px; }
+    .node-dropzone.error-highlight { background: var(--error-bg); border: 1px solid var(--error-border); }
+    .node-dropzone.success-highlight { background: var(--success-bg); border: 1px solid var(--success-border); }
+
+    .node-label {
+        font-size: 9px;
+        color: #64748b;
+        text-align: center;
+        line-height: 1.2;
+        margin-top: 6px;
+        pointer-events: none;
+    }
+
+    .node-dropzone .card {
+        width: 100%;
+        margin: 0;
+        position: relative;
+        z-index: 30;
+    }
+
+    /* Специфичные размеры для Pilot-BIM, так как он больше */
+    .node-dropzone[data-target="pilot"] { width: 160px; min-height: 90px; }
+
+    ::-webkit-scrollbar { height: 8px; width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <div class="top-panel">
+        <h3>Экосистема программного обеспечения</h3>
+        <p>Распределите названия систем по их функциональному назначению. Кликните по карточке ПО, а затем по пустому блоку на схеме (или просто перетащите).</p>
+        
+        <div class="palette" id="palette">
+            <!-- Карточки генерируются скриптом -->
+        </div>
+
+        <div class="controls">
+            <div class="status-msg" id="status-msg"></div>
+            <div class="btn-group">
+                <button class="btn-check" id="btn-check">Проверить решение</button>
+                <button class="btn-reset" id="btn-reset">Сбросить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="diagram-scroll-area">
+        <div class="diagram-container" id="diagram">
+            <svg id="svg-layer"></svg>
+            <!-- Узлы генерируются скриптом -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Данные узлов (координаты в процентах от диаграммы)
+    const nodes = [
+        { id: 'n1', x: 12, y: 25, label: 'Технологические расчеты', target: 'tech' },
+        { id: 'n2', x: 12, y: 75, label: 'Прочностные расчеты', target: 'calc' },
+        { id: 'n3', x: 33, y: 15, label: 'Концептуальное проектирование', target: 'infra' },
+        { id: 'n4', x: 62, y: 15, label: '3D конструирование', target: 'inv' },
+        { id: 'n5', x: 38, y: 50, label: 'BIM-модели', target: 'revit' },
+        { id: 'n6', x: 35, y: 85, label: 'BIM-модели металлоконструкций', target: 'steel' },
+        { id: 'n7', x: 58, y: 85, label: '2D эскизы', target: 'acad' },
+        { id: 'n8', x: 62, y: 55, label: 'Сводная модель', target: 'navis' },
+        { id: 'n9', x: 78, y: 85, label: 'Электротехническое проектирование', target: 'eplan' },
+        { id: 'n10', x: 88, y: 45, label: 'Управление инженерными данными / Технический документооборот и электронный архив', target: 'pilot' }
+    ];
+
+    const softwareCards = [
+        { id: 's1', text: 'Технологическое ПО', target: 'tech' },
+        { id: 's2', text: 'SCAD / Лира / Robot', target: 'calc' },
+        { id: 's3', text: 'Autodesk Infraworks', target: 'infra' },
+        { id: 's4', text: 'Autodesk Inventor', target: 'inv' },
+        { id: 's5', text: 'Autodesk Revit', target: 'revit' },
+        { id: 's6', text: 'Autodesk Advanced Steel', target: 'steel' },
+        { id: 's7', text: 'Autodesk AutoCAD', target: 'acad' },
+        { id: 's8', text: 'Autodesk Navisworks', target: 'navis' },
+        { id: 's9', text: 'EPLAN', target: 'eplan' },
+        { id: 's10', text: 'Pilot-BIM', target: 'pilot' }
+    ];
+
+    // Связи между узлами: dir = 'to' (одна стрелка), 'both' (две стрелки)
+    const connections = [
+        { from: 'n1', to: 'n5', dir: 'both' },
+        { from: 'n2', to: 'n5', dir: 'both' },
+        { from: 'n2', to: 'n6', dir: 'both' },
+        { from: 'n3', to: 'n5', dir: 'to' },
+        { from: 'n3', to: 'n10', dir: 'to' },
+        { from: 'n4', to: 'n5', dir: 'to' },
+        { from: 'n4', to: 'n8', dir: 'to' },
+        { from: 'n4', to: 'n10', dir: 'to' },
+        { from: 'n5', to: 'n6', dir: 'both' },
+        { from: 'n5', to: 'n7', dir: 'both' },
+        { from: 'n5', to: 'n8', dir: 'to' },
+        { from: 'n5', to: 'n10', dir: 'to' },
+        { from: 'n6', to: 'n8', dir: 'to' },
+        { from: 'n7', to: 'n8', dir: 'to' },
+        { from: 'n7', to: 'n10', dir: 'to' },
+        { from: 'n9', to: 'n8', dir: 'to' },
+        { from: 'n9', to: 'n10', dir: 'to' }
+    ];
+
+    let selectedCard = null;
+
+    function init() {
+        const diagram = document.getElementById('diagram');
+        const palette = document.getElementById('palette');
+        
+        palette.innerHTML = '';
+        
+        // Удаляем старые ноды (чтобы не дублировать при сбросе)
+        document.querySelectorAll('.node-dropzone').forEach(n => n.remove());
+
+        // Создаем зоны сброса
+        nodes.forEach(n => {
+            const dz = document.createElement('div');
+            dz.className = 'node-dropzone';
+            dz.id = n.id;
+            dz.style.left = `${n.x}%`;
+            dz.style.top = `${n.y}%`;
+            dz.dataset.target = n.target;
+            dz.innerHTML = `<div class="node-label">${n.label}</div>`;
+            diagram.appendChild(dz);
+        });
+
+        // Создаем карточки ПО и перемешиваем
+        const shuffled = softwareCards.sort(() => Math.random() - 0.5);
+        shuffled.forEach(c => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.draggable = true;
+            card.dataset.target = c.target;
+            card.textContent = c.text;
+            palette.appendChild(card);
+        });
+
+        setupInteractions();
+        
+        // Ждем рендера шрифтов и контейнеров, затем рисуем линии
+        setTimeout(drawLines, 150);
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.node-dropzone');
+        const palette = document.getElementById('palette');
+
+        cards.forEach(card => {
+            // Клик для выбора
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedCard === card) {
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            // Drag&Drop
+            card.addEventListener('dragstart', (e) => {
+                card.classList.add('dragging');
+                if (selectedCard) { selectedCard.classList.remove('selected'); selectedCard = null; }
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        // Возврат в палитру по клику
+        palette.addEventListener('click', () => {
+            if (selectedCard && selectedCard.parentNode !== palette) {
+                palette.appendChild(selectedCard);
+                selectedCard.classList.remove('selected');
+                selectedCard = null;
+            }
+        });
+
+        dropzones.forEach(zone => {
+            // Клик для вставки
+            zone.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Если кликнули по зоне, в которой уже есть карточка - берем ее
+                const existingCard = zone.querySelector('.card');
+                
+                if (selectedCard) {
+                    // Если в зоне уже есть карточка, возвращаем ее в палитру
+                    if (existingCard && existingCard !== selectedCard) {
+                        palette.appendChild(existingCard);
+                    }
+                    zone.insertBefore(selectedCard, zone.firstChild);
+                    selectedCard.classList.remove('selected');
+                    selectedCard = null;
+                } else if (existingCard) {
+                    // Выбираем карточку для перемещения
+                    selectedCard = existingCard;
+                    selectedCard.classList.add('selected');
+                }
+            });
+
+            // Drag&Drop
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const dragging = document.querySelector('.dragging');
+                if (dragging) {
+                    const existingCard = zone.querySelector('.card');
+                    if (existingCard && existingCard !== dragging) palette.appendChild(existingCard);
+                    zone.insertBefore(dragging, zone.firstChild);
+                }
+            });
+        });
+    }
+
+    // Математика для точного рисования линий от края до края блока
+    function getIntersection(w, h, dx, dy) {
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        if (absDx === 0 && absDy === 0) return 0;
+        const tX = absDx > 0 ? (w / 2) / absDx : Infinity;
+        const tY = absDy > 0 ? (h / 2) / absDy : Infinity;
+        const t = Math.min(tX, tY);
+        return t * Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function drawLines() {
+        const svg = document.getElementById('svg-layer');
+        svg.innerHTML = ''; 
+
+        // Маркеры стрелок
+        svg.innerHTML = `
+            <defs>
+                <marker id="arrow-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+                </marker>
+                <marker id="arrow-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M 0 5 L 10 1 L 10 9 z" fill="#64748b" />
+                </marker>
+            </defs>
+        `;
+
+        const diagramRect = document.getElementById('diagram').getBoundingClientRect();
+
+        connections.forEach(conn => {
+            const el1 = document.getElementById(conn.from);
+            const el2 = document.getElementById(conn.to);
+            if(!el1 || !el2) return;
+
+            const r1 = el1.getBoundingClientRect();
+            const r2 = el2.getBoundingClientRect();
+
+            // Центры
+            let x1 = r1.left + r1.width / 2 - diagramRect.left;
+            let y1 = r1.top + r1.height / 2 - diagramRect.top;
+            let x2 = r2.left + r2.width / 2 - diagramRect.left;
+            let y2 = r2.top + r2.height / 2 - diagramRect.top;
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+
+            // Укорачиваем линии, чтобы они не заходили под прозрачный фон и стрелки были видны
+            const pad1 = getIntersection(r1.width + 12, r1.height + 12, dx, dy);
+            const pad2 = getIntersection(r2.width + 12, r2.height + 12, dx, dy);
+
+            if (len > pad1 + pad2) {
+                const ratio1 = pad1 / len;
+                const ratio2 = pad2 / len;
+                const nx1 = x1 + dx * ratio1;
+                const ny1 = y1 + dy * ratio1;
+                const nx2 = x2 - dx * ratio2;
+                const ny2 = y2 - dy * ratio2;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', nx1);
+                line.setAttribute('y1', ny1);
+                line.setAttribute('x2', nx2);
+                line.setAttribute('y2', ny2);
+                line.setAttribute('stroke', '#64748b');
+                line.setAttribute('stroke-width', '1.5');
+
+                if (conn.dir === 'to') {
+                    line.setAttribute('marker-end', 'url(#arrow-end)');
+                } else if (conn.dir === 'both') {
+                    line.setAttribute('marker-end', 'url(#arrow-end)');
+                    line.setAttribute('marker-start', 'url(#arrow-start)');
+                }
+                svg.appendChild(line);
+            }
+        });
+    }
+
+    function showStatus(text, type) {
+        const msg = document.getElementById('status-msg');
+        msg.textContent = text;
+        msg.className = `status-msg ${type}`;
+    }
+
+    document.getElementById('btn-check').addEventListener('click', () => {
+        const dropzones = document.querySelectorAll('.node-dropzone');
+        let correctCount = 0;
+        let emptyCount = 0;
+
+        dropzones.forEach(zone => {
+            zone.classList.remove('error-highlight', 'success-highlight');
+            const card = zone.querySelector('.card');
+            
+            if (!card) {
+                emptyCount++;
+            } else if (card.dataset.target === zone.dataset.target) {
+                zone.classList.add('success-highlight');
+                correctCount++;
+            } else {
+                zone.classList.add('error-highlight');
+            }
+        });
+
+        if (correctCount === 10) {
+            showStatus('Отлично! Архитектура систем выстроена безупречно.', 'success');
+        } else if (emptyCount > 0) {
+            showStatus(`Распределено ${10 - emptyCount} из 10. Заполните все пустые ячейки.`, 'info');
+        } else {
+            showStatus('Есть ошибки. Неверные элементы выделены красным.', 'error');
+        }
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        init();
+        showStatus('Схема сброшена.', 'info');
+    });
+
+    // Перерисовка линий при изменении размера окна (для адаптивности)
+    window.addEventListener('resize', drawLines);
+
+    init();
+</script>
+</body>
+</html>
