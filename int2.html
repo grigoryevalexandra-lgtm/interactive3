@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Распределение функционала ИТ-систем</title>
+<style>
+    :root {
+        --primary: #2b849b;
+        --primary-hover: #1e6679;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --border-color: #cbd5e1;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fef2f2;
+        --error-border: #ef4444;
+        
+        /* Цвета колонок для визуального разделения */
+        --col-sapr: #f59e0b; /* Желто-оранжевый */
+        --col-stdo: #10b981; /* Зеленый */
+        --col-pm: #06b6d4;   /* Голубой/Циан */
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-card);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+        overflow-x: hidden;
+    }
+
+    .widget-container {
+        width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    h3 { margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #0f172a; line-height: 1.35; }
+    p.instruction { font-size: 12px; color: #475569; margin: 0 0 12px 0; line-height: 1.4; }
+
+    /* Пул карточек (исходная зона) */
+    .pool {
+        border: 2px dashed #94a3b8;
+        border-radius: 6px;
+        padding: 12px;
+        background: var(--bg-main);
+        min-height: 80px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+
+    /* Карточки функционала */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid #94a3b8;
+        color: #1e293b;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s, background-color 0.15s;
+        text-align: center;
+        max-width: 100%;
+        line-height: 1.25;
+        position: relative;
+        z-index: 10;
+    }
+
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.08); border-color: #64748b; }
+    .card.dragging { opacity: 0.4; transform: scale(0.95); }
+    
+    /* Состояние выбранной карточки (для кликов) */
+    .card.selected { 
+        background: #e0f2fe; 
+        border-width: 2px; 
+        padding: 7px 11px; 
+        border-color: #0284c7; 
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    /* Сетка 3 колонок */
+    .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(200px, 1fr));
+        gap: 12px;
+        align-items: start;
+    }
+    
+    /* Адаптивность для узких экранов (телефоны) */
+    @media (max-width: 650px) {
+        .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .col-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .col-header {
+        color: white;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 10px 8px;
+        line-height: 1.3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        box-sizing: border-box;
+    }
+
+    /* Зоны сброса */
+    .dropzone {
+        flex-grow: 1;
+        min-height: 120px;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    
+    .dropzone .card { width: 100%; margin: 0; box-sizing: border-box; }
+    .dropzone.drag-over { background: #f1f5f9; box-shadow: inset 0 0 0 2px var(--primary); }
+    
+    /* Подсветка ошибок и успехов */
+    .card.error-highlight { border-color: var(--error-border) !important; background: var(--error-bg); }
+    .card.success-highlight { border-color: var(--success-border) !important; background: var(--success-bg); }
+
+    /* Панель управления */
+    .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    
+    .btn-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    button {
+        flex: 1;
+        border: none;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .btn-check { background: var(--primary); color: white; }
+    .btn-check:hover { background: var(--primary-hover); }
+    .btn-reset { background: #e2e8f0; color: #475569; max-width: 120px; }
+    .btn-reset:hover { background: #cbd5e1; }
+
+    .feedback {
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 13px;
+        text-align: center;
+        display: none;
+    }
+    .feedback.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .feedback.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
+
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <div>
+        <h3>Распределите функционал по соответствующим системам автоматизации</h3>
+        <p class="instruction">Перетащите карточки в нужные колонки (или кликните по карточке, а затем по нужной колонке).</p>
+    </div>
+
+    <!-- Общий пул карточек -->
+    <div class="pool dropzone" data-target="pool" id="pool"></div>
+
+    <!-- Колонки для распределения -->
+    <div class="grid-3">
+        <!-- САПР -->
+        <div class="col-wrapper">
+            <div class="col-header" style="background: var(--col-sapr);">Система автоматизации проектирования</div>
+            <div class="dropzone" data-target="sapr"></div>
+        </div>
+        
+        <!-- СТДО -->
+        <div class="col-wrapper">
+            <div class="col-header" style="background: var(--col-stdo);">Система технического документооборота</div>
+            <div class="dropzone" data-target="stdo"></div>
+        </div>
+        
+        <!-- Сроки и ресурсы -->
+        <div class="col-wrapper">
+            <div class="col-header" style="background: var(--col-pm);">Система управления сроками и ресурсами</div>
+            <div class="dropzone" data-target="pm"></div>
+        </div>
+    </div>
+
+    <!-- Элементы управления -->
+    <div class="controls">
+        <div class="btn-row">
+            <button class="btn-check" onclick="checkAnswers()" id="btn-check">Проверить распределение</button>
+            <button class="btn-reset" onclick="resetGame()" id="btn-reset">Сбросить</button>
+        </div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    // Исходные данные с правильными ответами
+    const tasks = [
+        { id: "c1", text: "3D-моделирование", target: "sapr" },
+        { id: "c2", text: "Подготовка комплекта проектной документации для экспертизы", target: "stdo" },
+        { id: "c3", text: "Выстраивание связей между заданиями по проектированию", target: "pm" },
+        { id: "c4", text: "Прочностные расчеты", target: "sapr" },
+        { id: "c5", text: "Ведение архива", target: "stdo" },
+        { id: "c6", text: "Сводный перечень загрузки проектировщиков", target: "pm" },
+        { id: "c7", text: "Расчет токов короткого замыкания", target: "sapr" },
+        { id: "c8", text: "Кодирование комплектов документов", target: "stdo" },
+        { id: "c9", text: "Определение разделов рабочей документации на критическом пути", target: "pm" },
+        { id: "c10", text: "Разработка 2D-эскизов", target: "sapr" },
+        { id: "c11", text: "Нормоконтроль", target: "stdo" },
+        { id: "c12", text: "План-фактный анализ потраченных на разработку комплекта трудозатрат", target: "pm" }
+    ];
+
+    let selectedCard = null;
+
+    // Перемешивание массива
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    function init() {
+        const pool = document.getElementById('pool');
+        pool.innerHTML = '';
+        document.querySelectorAll('.dropzone:not(#pool)').forEach(dz => dz.innerHTML = '');
+        
+        const shuffledTasks = shuffle([...tasks]);
+        
+        shuffledTasks.forEach(task => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('draggable', 'true');
+            card.dataset.id = task.id;
+            card.dataset.target = task.target;
+            card.textContent = task.text;
+            pool.appendChild(card);
+        });
+
+        setupInteractions();
+        resetFeedback();
+    }
+
+    function setupInteractions() {
+        const cards = document.querySelectorAll('.card');
+        const dropzones = document.querySelectorAll('.dropzone');
+
+        // Обработчики для карточек
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation(); // Предотвращаем срабатывание клика на dropzone
+                if (card.getAttribute('draggable') !== 'true') return;
+
+                if (selectedCard === card) {
+                    // Снятие выделения
+                    card.classList.remove('selected');
+                    selectedCard = null;
+                } else {
+                    // Выделение новой карточки
+                    if (selectedCard) selectedCard.classList.remove('selected');
+                    selectedCard = card;
+                    card.classList.add('selected');
+                }
+            });
+
+            card.addEventListener('dragstart', (e) => {
+                if (card.getAttribute('draggable') !== 'true') {
+                    e.preventDefault();
+                    return;
+                }
+                card.classList.add('dragging');
+                if (selectedCard) { 
+                    selectedCard.classList.remove('selected'); 
+                    selectedCard = null; 
+                }
+                // Для Firefox
+                e.dataTransfer.setData('text/plain', card.dataset.id);
+            });
+            
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        // Обработчики для зон сброса
+        dropzones.forEach(zone => {
+            // Клик по зоне для перемещения выбранной карточки
+            zone.addEventListener('click', () => {
+                if (selectedCard) {
+                    zone.appendChild(selectedCard);
+                    selectedCard.classList.remove('selected', 'error-highlight', 'success-highlight');
+                    selectedCard = null;
+                    resetFeedback();
+                }
+            });
+
+            // Drag and Drop
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const dragging = document.querySelector('.dragging');
+                
+                if (dragging) {
+                    zone.appendChild(dragging);
+                    dragging.classList.remove('error-highlight', 'success-highlight');
+                    resetFeedback();
+                }
+            });
+        });
+    }
+
+    function checkAnswers() {
+        const pool = document.getElementById('pool');
+        const feedback = document.getElementById('feedback');
+        const cards = document.querySelectorAll('.card');
+        
+        // Сброс предыдущих подсветок
+        cards.forEach(c => c.classList.remove('error-highlight', 'success-highlight'));
+
+        if (pool.children.length > 0) {
+            feedback.innerHTML = 'Сперва распределите все карточки из верхнего пула по системам.';
+            feedback.className = 'feedback error';
+            return;
+        }
+
+        let isAllCorrect = true;
+        let errorCount = 0;
+        
+        document.querySelectorAll('.dropzone:not(#pool)').forEach(zone => {
+            const zoneTarget = zone.dataset.target;
+            const zoneCards = zone.querySelectorAll('.card');
+            
+            zoneCards.forEach(card => {
+                if (card.dataset.target !== zoneTarget) {
+                    isAllCorrect = false;
+                    errorCount++;
+                    card.classList.add('error-highlight');
+                } else {
+                    card.classList.add('success-highlight');
+                }
+            });
+        });
+
+        if (isAllCorrect) {
+            feedback.innerHTML = '<strong>Абсолютно верно!</strong> Весь функционал распределен правильно.';
+            feedback.className = 'feedback success';
+            
+            // Блокируем карточки
+            cards.forEach(c => { 
+                c.removeAttribute('draggable'); 
+                c.style.cursor = 'default';
+                c.classList.remove('selected');
+            });
+            selectedCard = null;
+            document.getElementById('btn-check').style.display = 'none';
+        } else {
+            feedback.innerHTML = `<strong>Есть ошибки (${errorCount}).</strong> Неверно размещенные карточки выделены красным. Верните их в другие колонки и попробуйте снова.`;
+            feedback.className = 'feedback error';
+        }
+    }
+
+    function resetFeedback() {
+        const feedback = document.getElementById('feedback');
+        feedback.style.display = 'none';
+        feedback.className = 'feedback';
+    }
+
+    window.resetGame = function() {
+        document.getElementById('btn-check').style.display = 'block';
+        init();
+    };
+
+    // Инициализация при загрузке
+    init();
+</script>
+</body>
+</html>
