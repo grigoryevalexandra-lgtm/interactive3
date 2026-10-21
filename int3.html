@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Интерактив: Сборка шифра документа</title>
+<style>
+    :root {
+        --primary: #2b849b;
+        --primary-hover: #1e6679;
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --border-color: #cbd5e1;
+        --success-bg: #ecfdf5;
+        --success-border: #10b981;
+        --error-bg: #fef2f2;
+        --error-border: #ef4444;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        background-color: var(--bg-card);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-main);
+    }
+
+    .widget-container {
+        width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-main);
+    }
+
+    h3 { margin: 0 0 10px 0; font-size: 16px; color: #0f172a; }
+    
+    .task-conditions {
+        background: #e0f2fe;
+        border-left: 4px solid #0284c7;
+        padding: 10px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        line-height: 1.4;
+        margin-bottom: 16px;
+        color: #0369a1;
+    }
+
+    /* Справочные материалы (Таблицы) */
+    .reference-section {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .ref-block {
+        flex: 1;
+        min-width: 300px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .ref-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #475569;
+        margin-bottom: 8px;
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 4px;
+        display: inline-block;
+    }
+
+    /* Таблица типов документов */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+    th, td {
+        border: 1px solid var(--border-color);
+        padding: 6px 8px;
+        text-align: left;
+    }
+    th { background: #f1f5f9; font-weight: 600; color: #334155; }
+    td.code-cell { font-weight: 700; color: #0f172a; text-align: center; }
+
+    /* Список кодов материалов */
+    .material-list { font-size: 11px; line-height: 1.5; }
+    .material-list strong { color: #0f172a; }
+    .indent-1 { margin-left: 12px; }
+    .indent-2 { margin-left: 24px; color: #475569; }
+
+    /* Конструктор шифра */
+    .builder-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .slots-container {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 20px;
+    }
+
+    .slot-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 64px;
+    }
+
+    .slot {
+        width: 100%;
+        height: 34px;
+        border: 2px dashed #94a3b8;
+        border-radius: 4px;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+
+    .slot.drag-over { background: #e0f2fe; border-color: #0284c7; }
+    .slot.filled { border: 2px solid var(--primary); background: white; }
+    .slot.error { border-color: var(--error-border); background: var(--error-bg); }
+    .slot.success { border-color: var(--success-border); background: var(--success-bg); }
+
+    .separator {
+        font-size: 18px;
+        font-weight: bold;
+        color: #64748b;
+        margin: 6px 2px 0 2px;
+    }
+
+    .slot-label {
+        font-size: 9px;
+        text-align: center;
+        color: #475569;
+        margin-top: 6px;
+        padding-top: 4px;
+        border-top: 1px solid #cbd5e1;
+        width: 100%;
+        line-height: 1.1;
+    }
+
+    /* Пул карточек */
+    .pool {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        background: #f1f5f9;
+        border-radius: 6px;
+        border: 1px dashed #94a3b8;
+        min-height: 40px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chip {
+        background: white;
+        border: 1px solid var(--primary);
+        color: #0f172a;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        user-select: none;
+        transition: transform 0.1s, box-shadow 0.15s;
+        z-index: 10;
+    }
+
+    .chip:hover { transform: translateY(-1px); box-shadow: 0 3px 5px rgba(0,0,0,0.1); }
+    .chip.dragging { opacity: 0.5; transform: scale(0.95); }
+    .chip.selected { outline: 2px solid #0284c7; outline-offset: 1px; }
+
+    /* Вставленный чип адаптируется под слот */
+    .slot .chip {
+        width: 100%; height: 100%;
+        border: none; box-shadow: none;
+        display: flex; align-items: center; justify-content: center;
+        padding: 0; border-radius: 2px;
+    }
+
+    /* Кнопки и фидбек */
+    .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
+
+    button {
+        border: none; padding: 10px 16px; border-radius: 4px;
+        font-size: 13px; font-weight: 600; cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .btn-check { background: var(--primary); color: white; }
+    .btn-check:hover { background: var(--primary-hover); }
+    .btn-reset { background: #e2e8f0; color: #475569; }
+    .btn-reset:hover { background: #cbd5e1; }
+
+    .feedback {
+        padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; display: none; flex-grow: 1;
+    }
+    .feedback.success { display: block; background: var(--success-bg); color: #047857; border: 1px solid var(--success-border); }
+    .feedback.error { display: block; background: var(--error-bg); color: #b91c1c; border: 1px solid var(--error-border); }
+
+</style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h3>Практика: Сборка шифра документа</h3>
+    
+    <div class="task-conditions">
+        <strong>Вводные данные:</strong> Выпускается документ ревизии <strong>«B»</strong>, с расширением <strong>XLS</strong>. По проекту номер <strong>53812</strong> и разделу <strong>001</strong>. Тип документа: <strong>«Перечень материалов»</strong>. Дисциплина: <strong>Сварные трубы</strong>. Порядковый номер документа – <strong>015</strong>.
+    </div>
+
+    <div class="reference-section">
+        <!-- Справочник типов документов -->
+        <div class="ref-block">
+            <div class="ref-title">Справочник: Типы документов</div>
+            <table>
+                <tr><th>Дисциплина / Тема</th><th>Код (Тип)</th></tr>
+                <tr><td>Исследование</td><td class="code-cell">DW</td></tr>
+                <tr><td>Перечень материалов</td><td class="code-cell">MTO</td></tr>
+                <tr><td>Жилые помещения: Список оборудования</td><td class="code-cell">NM</td></tr>
+                <tr><td>Жилые помещения: Архитектурная планировка</td><td class="code-cell">DW</td></tr>
+                <tr><td>Стандарты проектирования</td><td class="code-cell">STD</td></tr>
+            </table>
+        </div>
+
+        <!-- Справочник кодов материалов -->
+        <div class="ref-block">
+            <div class="ref-title">Справочник: Коды материалов</div>
+            <div class="material-list">
+                <strong>2700 НАДЗЕМНЫЕ ТРУБОПРОВОДЫ</strong><br>
+                <div class="indent-1"><strong>2731</strong> КЛАПАНЫ С РУЧНЫМ УПРАВЛЕНИЕМ</div>
+                <div class="indent-2">07 Шаровые краны</div>
+                <div class="indent-2">51 Обратные клапаны</div>
+                <div class="indent-1"><strong>2741</strong> ТРУБЫ</div>
+                <div class="indent-2">01 Бесшовная труба</div>
+                <div class="indent-2">02 Сварная труба</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="builder-section">
+        <!-- Зона сборки -->
+        <div class="slots-container" id="slots-container">
+            <div class="slot-group"><div class="slot" data-expected="53812"></div><div class="slot-label">Проект №</div></div>
+            <div class="separator">-</div>
+            <div class="slot-group"><div class="slot" data-expected="001"></div><div class="slot-label">№ раздела</div></div>
+            <div class="separator">-</div>
+            <div class="slot-group"><div class="slot" data-expected="MTO"></div><div class="slot-label">Док. Тип</div></div>
+            <div class="separator">-</div>
+            <div class="slot-group"><div class="slot" data-expected="2741"></div><div class="slot-label">Код материала</div></div>
+            <div class="separator">-</div>
+            <div class="slot-group"><div class="slot" data-expected="015"></div><div class="slot-label">Порядк. №</div></div>
+            <div class="separator">-</div>
+            <div class="slot-group" style="width: 40px;"><div class="slot" data-expected="B"></div><div class="slot-label">Индекс</div></div>
+            <div class="separator">.</div>
+            <div class="slot-group" style="width: 40px;"><div class="slot" data-expected="xls"></div><div class="slot-label">Расширение</div></div>
+        </div>
+
+        <!-- Пул элементов -->
+        <div class="pool" id="pool">
+            <!-- Чипы генерируются JS -->
+        </div>
+
+        <div class="controls">
+            <button class="btn-check" id="btn-check">Проверить шифр</button>
+            <button class="btn-reset" id="btn-reset">Сбросить</button>
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Правильные фрагменты и дистракторы (перемешанные)
+    const fragments = ["53812", "001", "MTO", "2741", "015", "B", "xls", "DW", "STD", "2731", "A", "pdf", "012"];
+    let selectedChip = null;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function init() {
+        const pool = document.getElementById('pool');
+        const slots = document.querySelectorAll('.slot');
+        
+        pool.innerHTML = '';
+        slots.forEach(slot => {
+            slot.innerHTML = '';
+            slot.className = 'slot';
+        });
+
+        const shuffled = shuffle([...fragments]);
+        shuffled.forEach(val => {
+            const chip = document.createElement('div');
+            chip.className = 'chip';
+            chip.textContent = val;
+            chip.dataset.val = val;
+            chip.setAttribute('draggable', 'true');
+            pool.appendChild(chip);
+        });
+
+        document.getElementById('feedback').className = 'feedback';
+        document.getElementById('feedback').style.display = 'none';
+
+        setupInteractions();
+    }
+
+    function setupInteractions() {
+        const chips = document.querySelectorAll('.chip');
+        const slots = document.querySelectorAll('.slot');
+        const pool = document.getElementById('pool');
+
+        // Обработка кликов и Drag&Drop для чипов
+        chips.forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (selectedChip === chip) {
+                    chip.classList.remove('selected');
+                    selectedChip = null;
+                } else {
+                    if (selectedChip) selectedChip.classList.remove('selected');
+                    selectedChip = chip;
+                    chip.classList.add('selected');
+                }
+            });
+
+            chip.addEventListener('dragstart', (e) => {
+                chip.classList.add('dragging');
+                if (selectedChip) { selectedChip.classList.remove('selected'); selectedChip = null; }
+            });
+            chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+        });
+
+        // Возврат в пул по клику на саму зону пула
+        pool.addEventListener('click', () => {
+            if (selectedChip && selectedChip.parentNode !== pool) {
+                pool.appendChild(selectedChip);
+                selectedChip.classList.remove('selected');
+                selectedChip = null;
+                updateSlotStyles();
+            }
+        });
+
+        // Обработка слотов
+        slots.forEach(slot => {
+            slot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const existingChip = slot.querySelector('.chip');
+                
+                if (selectedChip) {
+                    // Если слот занят, выкидываем старый чип в пул
+                    if (existingChip && existingChip !== selectedChip) {
+                        pool.appendChild(existingChip);
+                    }
+                    slot.appendChild(selectedChip);
+                    selectedChip.classList.remove('selected');
+                    selectedChip = null;
+                } else if (existingChip) {
+                    // Если кликнули по занятому слоту без выбранного чипа, выбираем этот чип
+                    selectedChip = existingChip;
+                    selectedChip.classList.add('selected');
+                }
+                updateSlotStyles();
+            });
+
+            slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
+            slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+            
+            slot.addEventListener('drop', e => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                const dragging = document.querySelector('.dragging');
+                if (dragging) {
+                    const existingChip = slot.querySelector('.chip');
+                    if (existingChip && existingChip !== dragging) pool.appendChild(existingChip);
+                    slot.appendChild(dragging);
+                    updateSlotStyles();
+                }
+            });
+        });
+    }
+
+    function updateSlotStyles() {
+        document.querySelectorAll('.slot').forEach(slot => {
+            slot.classList.remove('error', 'success');
+            if (slot.children.length > 0) {
+                slot.classList.add('filled');
+            } else {
+                slot.classList.remove('filled');
+            }
+        });
+        document.getElementById('feedback').style.display = 'none';
+    }
+
+    document.getElementById('btn-check').addEventListener('click', () => {
+        const slots = document.querySelectorAll('.slot');
+        const feedback = document.getElementById('feedback');
+        let isComplete = true;
+        let isCorrect = true;
+
+        slots.forEach(slot => {
+            slot.classList.remove('error', 'success');
+            const chip = slot.querySelector('.chip');
+            
+            if (!chip) {
+                isComplete = false;
+            } else if (chip.dataset.val === slot.dataset.expected) {
+                slot.classList.add('success');
+            } else {
+                slot.classList.add('error');
+                isCorrect = false;
+            }
+        });
+
+        if (!isComplete) {
+            feedback.textContent = 'Заполните все пустые слоты шифра.';
+            feedback.className = 'feedback error';
+        } else if (isCorrect) {
+            feedback.innerHTML = '<strong>Верно!</strong> Итоговый код файла: 53812-001-MTO-2741-015-B.xls';
+            feedback.className = 'feedback success';
+        } else {
+            feedback.textContent = 'В шифре есть ошибки. Неверные блоки выделены красным. Сверьтесь со справочниками.';
+            feedback.className = 'feedback error';
+        }
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', init);
+
+    init();
+</script>
+</body>
+</html>
