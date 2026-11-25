@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Задание для закрепления. Блок 3</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: учебный лист — узкая колонка текста, широкие медиа-врезки, таймкоды видео как рабочая сетка */
+:root{
+  --paper:#f3f5f8; --sheet:#ffffff; --ink:#1b2430; --muted:#5b6778; --line:#d5dbe4;
+  --accent:#d9661c; --accent-soft:#fbe9dc; --blue:#2c5d9e; --grid:rgba(44,93,158,.07);
+  --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#15191f; --sheet:#1c222a; --ink:#e6eaf0; --muted:#9aa5b5; --line:#2f3844;
+  --accent:#f08a43; --accent-soft:#3a2a1e; --blue:#7fa8e0; --grid:rgba(127,168,224,.06); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15191f; --sheet:#1c222a; --ink:#e6eaf0; --muted:#9aa5b5; --line:#2f3844;
+  --accent:#f08a43; --accent-soft:#3a2a1e; --blue:#7fa8e0; --grid:rgba(127,168,224,.06); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 17px/1.6 var(--f-body);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;}
+.wrap{max-width:980px;margin:0 auto;padding-block:32px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:grid;gap:20px;margin-bottom:28px}
+.eyebrow{font:600 13px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-weight:700;font-size:clamp(28px,4.6vw,44px);line-height:1.15;margin:0;text-wrap:balance}
+.lead{color:var(--muted);max-width:65ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 13px/1 var(--f-mono);padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:var(--sheet);color:var(--muted)}
+.cover{border-radius:6px;border:1px solid var(--line);display:block;width:100%}
+nav.toc{background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin:28px 0 8px}
+nav.toc h2{margin:0 0 10px;font-size:15px;font-family:var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+nav.toc ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px}
+nav.toc a{display:flex;gap:12px;color:var(--ink);text-decoration:none;padding:4px 0}
+nav.toc a:hover span:last-child{color:var(--accent)}
+.tc{font:500 13px/1.9 var(--f-mono);color:var(--blue);font-variant-numeric:tabular-nums;min-width:44px}
+section{padding-top:40px}
+section h2{display:flex;align-items:baseline;gap:14px;font-size:clamp(22px,3vw,28px);line-height:1.25;margin:0 0 14px;text-wrap:balance}
+section h2 .tc{font-size:14px;flex:none}
+p,ul,ol.steps{max-width:68ch}
+ul{padding-left:1.2em}
+li{margin:4px 0}
+b{font-weight:600}
+kbd{font:500 .85em var(--f-mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--sheet)}
+.ui{font-weight:600;color:var(--blue)}
+figure{margin:20px 0;display:grid;gap:8px}
+figure img{width:100%;border-radius:6px;border:1px solid var(--line);background:#222}
+figcaption{font-size:14px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+figcaption .tag{font:600 11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:0 6px;border-radius:3px}
+.tip{border-left:3px solid var(--accent);background:var(--sheet);padding:12px 16px;border-radius:0 6px 6px 0;max-width:68ch;margin:16px 0}
+.tip strong{color:var(--accent)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--sheet);margin:16px 0}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{font:600 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap;font-weight:600}
+td.tc{white-space:nowrap}
+.status{display:flex;flex-wrap:wrap;gap:4px;margin:12px 0}
+.status span{font:500 12px/1 var(--f-mono);padding:6px 8px;background:#2b3138;color:#cfd6df;border-radius:3px}
+.status span.on{background:#3a5f94;color:#fff}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.two figure{margin:0}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer ul{padding-left:1.2em}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+
+.sec{font-size:clamp(22px,3vw,28px);margin:48px 0 8px;padding-top:12px;border-top:2px solid var(--line)}
+.les{display:flex;gap:10px;align-items:baseline;font-size:19px;margin:28px 0 12px}
+.les .num{font:600 14px/1 var(--f-mono);color:var(--accent)}
+.q{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:0 0 14px}
+.q.good{border-color:#3d9a5b;box-shadow:inset 4px 0 0 #3d9a5b}
+.q.bad{border-color:#c4533a;box-shadow:inset 4px 0 0 #c4533a}
+.qh{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.qn{font:600 13px/1 var(--f-mono);background:var(--accent-soft);color:var(--accent);padding:5px 8px;border-radius:6px}
+.qt{font:500 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.qq{margin:6px 0 12px;font-weight:500}
+.q figure{margin:0 0 12px}.q img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;display:block}
+.pics{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.pics figcaption{font-size:14px;color:var(--muted);margin-top:4px}
+.opts{display:grid;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.opt:hover{border-color:var(--blue)}
+.opt input{margin-top:5px}
+.let{font:600 13px/1.9 var(--f-mono);color:var(--blue);min-width:1.2em}
+.right{list-style:none;padding:0;margin:0 0 10px;display:grid;gap:4px}
+.right li{display:flex;gap:10px}
+.pairs{display:grid;gap:6px}
+.pair{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:6px 10px;border:1px dashed var(--line);border-radius:8px}
+.ln{font:600 13px/1 var(--f-mono);color:var(--accent)}
+select,.wr{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+.wr{width:100%;max-width:420px}
+.fb{margin:10px 0 0;font-size:15px}
+.q.good .fb{color:#3d9a5b}.q.bad .fb{color:#c4533a}
+.bar{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-top:24px}
+button{font:600 15px/1 var(--f-body);background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 18px;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+#score{font:600 15px/1 var(--f-mono)}
+</style></head><body><div class="wrap">
+<header><div class="eyebrow">Блок 3 · Задание для закрепления</div><h1>Проверьте себя по третьему блоку</h1>
+<p class="lead">По три задания на каждый урок: тесты, сопоставления и вопросы, где нужно вписать название команды. Программа не нужна. Выполните задание и нажмите «Проверить» — верные ответы подсветятся.</p>
+<div class="meta"><span class="chip">27 заданий</span><span class="chip">9 уроков</span><span class="chip">4 раздела</span></div></header>
+<nav class="toc"><h2>Разделы</h2><ol><li><a href="#r0">Слои nanoCAD</a></li><li><a href="#r1">Создание и редактирование текста</a></li><li><a href="#r2">Простановка размеров</a></li><li><a href="#r3">Простановка выносок</a></li></ol></nav>
+<section id="r0"><h2 class="sec">Раздел 1. Слои nanoCAD</h2>
+<h3 class="les"><span class="num">1.1</span>Слои. Диспетчер слоёв</h3>
+<article class="q" data-n="1"><div class="qh"><span class="qn">1</span><span class="qt">Тест</span></div><p class="qq">Чем замороженный слой отличается от выключенного?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q1" value="0"><span class="let">а</span><span>Ничем, это два названия одного действия</span></label><label class="opt"><input type="radio" name="q1" value="1"><span class="let">б</span><span>Замороженный слой не только скрыт, но и исключён из работы: его объекты нельзя выбрать и изменить</span></label><label class="opt"><input type="radio" name="q1" value="2"><span class="let">в</span><span>Замороженный слой виден, но не печатается</span></label><label class="opt"><input type="radio" name="q1" value="3"><span class="let">г</span><span>Выключенный слой удаляется из чертежа, а замороженный остаётся</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="2"><div class="qh"><span class="qn">2</span><span class="qt">Сопоставление</span></div><p class="qq">Сопоставьте действие со слоем и его результат.</p>
+<ol class="right"><li><span class="let">А</span>Объекты видны, но защищены от изменения и случайного удаления</li><li><span class="let">Б</span>Объекты видны при работе, но не выводятся на печать</li><li><span class="let">В</span>Слой скрыт на экране, объекты остаются в чертеже</li></ol>
+<div class="pairs"><label class="pair"><span class="ln">1</span><span class="lt">Выключение (лампочка)</span><select name="q2_0"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">2</span><span class="lt">Блокировка (замок)</span><select name="q2_1"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">3</span><span class="lt">Значок принтера</span><select name="q2_2"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="3"><div class="qh"><span class="qn">3</span><span class="qt">Тест</span></div><p class="qq">Цвет слоя выбирают в этом окне. Почему автор советует брать цвет на вкладке «Номер цвета»?</p>
+<figure><img src="Изображения/01 Окно выбора цвета.jpg" alt="Иллюстрация к заданию 3" loading="lazy"></figure>
+<div class="opts"><label class="opt"><input type="radio" name="q3" value="0"><span class="let">а</span><span>Там цвета ярче</span></label><label class="opt"><input type="radio" name="q3" value="1"><span class="let">б</span><span>Цвета из полной палитры и альбомов могут остаться цветными даже при монохромной печати</span></label><label class="opt"><input type="radio" name="q3" value="2"><span class="let">в</span><span>На других вкладках цвет нельзя сохранить</span></label><label class="opt"><input type="radio" name="q3" value="3"><span class="let">г</span><span>Номер цвета нужен только для 3D</span></label></div>
+<p class="fb" hidden></p></article>
+</section>
+<section id="r1"><h2 class="sec">Раздел 2. Создание и редактирование текста</h2>
+<h3 class="les"><span class="num">2.1</span>Однострочный текст</h3>
+<article class="q" data-n="4"><div class="qh"><span class="qn">4</span><span class="qt">Тест</span></div><p class="qq">Чертёж выполнен в масштабе 1:100. Какую высоту однострочного текста задать в модели, чтобы на бумаге получился шрифт 2,5 мм?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q4" value="0"><span class="let">а</span><span>2,5</span></label><label class="opt"><input type="radio" name="q4" value="1"><span class="let">б</span><span>25</span></label><label class="opt"><input type="radio" name="q4" value="2"><span class="let">в</span><span>250</span></label><label class="opt"><input type="radio" name="q4" value="3"><span class="let">г</span><span>2500</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="5"><div class="qh"><span class="qn">5</span><span class="qt">Тест</span></div><p class="qq">Для каких надписей обычно используют однострочный текст?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q5" value="0"><span class="let">а</span><span>Для коротких подписей и маркировок</span></label><label class="opt"><input type="radio" name="q5" value="1"><span class="let">б</span><span>Для больших примечаний с нумерацией</span></label><label class="opt"><input type="radio" name="q5" value="2"><span class="let">в</span><span>Для таблиц</span></label><label class="opt"><input type="radio" name="q5" value="3"><span class="let">г</span><span>Только для размеров</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="6"><div class="qh"><span class="qn">6</span><span class="qt">Впишите ответ</span></div><p class="qq">Какой угол поворота обычно задают для однострочного текста? Впишите число.</p>
+<input class="wr" type="text" name="q6" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+<h3 class="les"><span class="num">2.2</span>Многострочный текст</h3>
+<article class="q" data-n="7"><div class="qh"><span class="qn">7</span><span class="qt">Тест</span></div><p class="qq">Что открылось на рисунке после указания области текста?</p>
+<figure><img src="Изображения/02 Окно редактора.jpg" alt="Иллюстрация к заданию 7" loading="lazy"></figure>
+<div class="opts"><label class="opt"><input type="radio" name="q7" value="0"><span class="let">а</span><span>Редактор многострочного текста</span></label><label class="opt"><input type="radio" name="q7" value="1"><span class="let">б</span><span>Окно «Текстовые стили»</span></label><label class="opt"><input type="radio" name="q7" value="2"><span class="let">в</span><span>Панель «Свойства»</span></label><label class="opt"><input type="radio" name="q7" value="3"><span class="let">г</span><span>Диспетчер слоёв</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="8"><div class="qh"><span class="qn">8</span><span class="qt">Тест</span></div><p class="qq">Какая возможность есть у многострочного текста, но нет у однострочного?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q8" value="0"><span class="let">а</span><span>Выбор высоты текста</span></label><label class="opt"><input type="radio" name="q8" value="1"><span class="let">б</span><span>Выбор текстового стиля</span></label><label class="opt"><input type="radio" name="q8" value="2"><span class="let">в</span><span>Нумерованный список и выравнивание выделенного фрагмента</span></label><label class="opt"><input type="radio" name="q8" value="3"><span class="let">г</span><span>Угол поворота</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="9"><div class="qh"><span class="qn">9</span><span class="qt">Впишите ответ</span></div><p class="qq">Как называется параметр, который сужает символы, чтобы текст поместился по ширине без уменьшения высоты?</p>
+<input class="wr" type="text" name="q9" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+<h3 class="les"><span class="num">2.3</span>Стиль текста</h3>
+<article class="q" data-n="10"><div class="qh"><span class="qn">10</span><span class="qt">Тест</span></div><p class="qq">На какой вкладке ленты открывается окно текстовых стилей?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q10" value="0"><span class="let">а</span><span>Главная</span></label><label class="opt"><input type="radio" name="q10" value="1"><span class="let">б</span><span>Оформление</span></label><label class="opt"><input type="radio" name="q10" value="2"><span class="let">в</span><span>Вид</span></label><label class="opt"><input type="radio" name="q10" value="3"><span class="let">г</span><span>Вставка</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="11"><div class="qh"><span class="qn">11</span><span class="qt">Сопоставление</span></div><p class="qq">Сопоставьте стиль, который есть в новом документе, и его описание.</p>
+<ol class="right"><li><span class="let">А</span>Стиль со шрифтом по ГОСТ, его и стоит брать для чертежей</li><li><span class="let">Б</span>Создаётся автоматически вместе с документом, шрифт не гостовский</li></ol>
+<div class="pairs"><label class="pair"><span class="ln">1</span><span class="lt">Standard</span><select name="q11_0"><option value="">—</option><option value="0">А</option><option value="1">Б</option></select></label><label class="pair"><span class="ln">2</span><span class="lt">ГОСТ 2.304</span><select name="q11_1"><option value="">—</option><option value="0">А</option><option value="1">Б</option></select></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="12"><div class="qh"><span class="qn">12</span><span class="qt">Впишите ответ</span></div><p class="qq">Окно текстовых стилей открывается маленькой неподписанной … в правом нижнем углу группы «Текст». Впишите пропущенное слово.</p>
+<input class="wr" type="text" name="q12" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+</section>
+<section id="r2"><h2 class="sec">Раздел 3. Простановка размеров</h2>
+<h3 class="les"><span class="num">3.1</span>Линейные, параллельные и угловые размеры</h3>
+<article class="q" data-n="13"><div class="qh"><span class="qn">13</span><span class="qt">Тест</span></div><p class="qq">Нужно измерить наклонную грань прямоугольника, повёрнутого на 30°. Какой размер выбрать?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q13" value="0"><span class="let">а</span><span>Линейный</span></label><label class="opt"><input type="radio" name="q13" value="1"><span class="let">б</span><span>Параллельный</span></label><label class="opt"><input type="radio" name="q13" value="2"><span class="let">в</span><span>Угловой</span></label><label class="opt"><input type="radio" name="q13" value="3"><span class="let">г</span><span>Радиальный</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="14"><div class="qh"><span class="qn">14</span><span class="qt">Сопоставление</span></div><p class="qq">Сопоставьте вид размера и его особенность.</p>
+<ol class="right"><li><span class="let">А</span>Располагается вдоль измеряемого отрезка</li><li><span class="let">Б</span>Показывает наклон отрезка относительно оси X или Y</li><li><span class="let">В</span>Всегда горизонтальный или вертикальный</li></ol>
+<div class="pairs"><label class="pair"><span class="ln">1</span><span class="lt">Линейный</span><select name="q14_0"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">2</span><span class="lt">Параллельный</span><select name="q14_1"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">3</span><span class="lt">Угловой ординатный</span><select name="q14_2"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="15"><div class="qh"><span class="qn">15</span><span class="qt">Тест</span></div><p class="qq">К каким точкам автор советует привязывать размеры?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q15" value="0"><span class="let">а</span><span>К любым точкам на объекте</span></label><label class="opt"><input type="radio" name="q15" value="1"><span class="let">б</span><span>К конечным точкам элементов</span></label><label class="opt"><input type="radio" name="q15" value="2"><span class="let">в</span><span>К центру экрана</span></label><label class="opt"><input type="radio" name="q15" value="3"><span class="let">г</span><span>К сетке</span></label></div>
+<p class="fb" hidden></p></article>
+<h3 class="les"><span class="num">3.2</span>Радиусы и диаметры</h3>
+<article class="q" data-n="16"><div class="qh"><span class="qn">16</span><span class="qt">Тест</span></div><p class="qq">Какой размер проставлен на рисунке?</p>
+<figure><img src="Изображения/03 Размер окружности.jpg" alt="Иллюстрация к заданию 16" loading="lazy"></figure>
+<div class="opts"><label class="opt"><input type="radio" name="q16" value="0"><span class="let">а</span><span>Радиус</span></label><label class="opt"><input type="radio" name="q16" value="1"><span class="let">б</span><span>Диаметр</span></label><label class="opt"><input type="radio" name="q16" value="2"><span class="let">в</span><span>Линейный</span></label><label class="opt"><input type="radio" name="q16" value="3"><span class="let">г</span><span>Угловой</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="17"><div class="qh"><span class="qn">17</span><span class="qt">Впишите ответ</span></div><p class="qq">Какой клавишей, кроме Enter, можно повторить последнюю команду?</p>
+<input class="wr" type="text" name="q17" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+<article class="q" data-n="18"><div class="qh"><span class="qn">18</span><span class="qt">Впишите ответ</span></div><p class="qq">Как называется команда, которая продолжает размеры от выбранного, пристраивая каждый следующий к предыдущему?</p>
+<input class="wr" type="text" name="q18" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+<h3 class="les"><span class="num">3.3</span>Настройка размерного стиля</h3>
+<article class="q" data-n="19"><div class="qh"><span class="qn">19</span><span class="qt">Тест</span></div><p class="qq">На основе какого стиля автор советует создавать новый размерный стиль для чертежей по ГОСТ?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q19" value="0"><span class="let">а</span><span>Standard</span></label><label class="opt"><input type="radio" name="q19" value="1"><span class="let">б</span><span>СПДС</span></label><label class="opt"><input type="radio" name="q19" value="2"><span class="let">в</span><span>Аннотативный</span></label><label class="opt"><input type="radio" name="q19" value="3"><span class="let">г</span><span>Любого — разницы нет</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="20"><div class="qh"><span class="qn">20</span><span class="qt">Сопоставление</span></div><p class="qq">Сопоставьте вкладку окна размерного стиля и то, что на ней настраивается.</p>
+<ol class="right"><li><span class="let">А</span>Вид засечек и стрелок</li><li><span class="let">Б</span>Формат и точность чисел</li><li><span class="let">В</span>Удлинение за выносные, отступ от объекта, вес линий</li></ol>
+<div class="pairs"><label class="pair"><span class="ln">1</span><span class="lt">Линии</span><select name="q20_0"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">2</span><span class="lt">Символы и стрелки</span><select name="q20_1"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">3</span><span class="lt">Основные единицы</span><select name="q20_2"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="21"><div class="qh"><span class="qn">21</span><span class="qt">Тест</span></div><p class="qq">Почему заливку фона размерного текста лучше оставить «Нет»?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q21" value="0"><span class="let">а</span><span>Иначе текст не напечатается</span></label><label class="opt"><input type="radio" name="q21" value="1"><span class="let">б</span><span>Иначе на штриховке под размером появится белый прямоугольник</span></label><label class="opt"><input type="radio" name="q21" value="2"><span class="let">в</span><span>Иначе размер нельзя будет редактировать</span></label><label class="opt"><input type="radio" name="q21" value="3"><span class="let">г</span><span>Иначе текст станет цветным</span></label></div>
+<p class="fb" hidden></p></article>
+</section>
+<section id="r3"><h2 class="sec">Раздел 4. Простановка выносок</h2>
+<h3 class="les"><span class="num">4.1</span>Простановка выносок</h3>
+<article class="q" data-n="22"><div class="qh"><span class="qn">22</span><span class="qt">Тест</span></div><p class="qq">Какую выноску автор советует использовать чаще всего?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q22" value="0"><span class="let">а</span><span>Универсальную</span></label><label class="opt"><input type="radio" name="q22" value="1"><span class="let">б</span><span>Позиционную</span></label><label class="opt"><input type="radio" name="q22" value="2"><span class="let">в</span><span>Аннотативную</span></label><label class="opt"><input type="radio" name="q22" value="3"><span class="let">г</span><span>Выноску-сноску</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="23"><div class="qh"><span class="qn">23</span><span class="qt">Тест</span></div><p class="qq">Какой указатель выбирают у выноски для высотной отметки?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q23" value="0"><span class="let">а</span><span>Стрелку</span></label><label class="opt"><input type="radio" name="q23" value="1"><span class="let">б</span><span>Точку</span></label><label class="opt"><input type="radio" name="q23" value="2"><span class="let">в</span><span>Засечку</span></label><label class="opt"><input type="radio" name="q23" value="3"><span class="let">г</span><span>Указатель не нужен</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="24"><div class="qh"><span class="qn">24</span><span class="qt">Впишите ответ</span></div><p class="qq">Какой символ у ручки выноски добавляет указатель ещё на один элемент?</p>
+<input class="wr" type="text" name="q24" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+<h3 class="les"><span class="num">4.2</span>Настройка стиля выносок</h3>
+<article class="q" data-n="25"><div class="qh"><span class="qn">25</span><span class="qt">Сопоставление</span></div><p class="qq">Сопоставьте вкладку стиля мультивыноски и её содержимое.</p>
+<ol class="right"><li><span class="let">А</span>Текст или блок, текстовый стиль, выравнивание</li><li><span class="let">Б</span>Тип линии, стрелка и её размер, разрыв</li><li><span class="let">В</span>Число точек, полка, углы сегментов</li></ol>
+<div class="pairs"><label class="pair"><span class="ln">1</span><span class="lt">Формат выноски</span><select name="q25_0"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">2</span><span class="lt">Структура выноски</span><select name="q25_1"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label><label class="pair"><span class="ln">3</span><span class="lt">Содержание</span><select name="q25_2"><option value="">—</option><option value="0">А</option><option value="1">Б</option><option value="2">В</option></select></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="26"><div class="qh"><span class="qn">26</span><span class="qt">Тест</span></div><p class="qq">Какие стили мультивыносок есть в документе по умолчанию?</p>
+<div class="opts"><label class="opt"><input type="radio" name="q26" value="0"><span class="let">а</span><span>Стандартный и аннотативный</span></label><label class="opt"><input type="radio" name="q26" value="1"><span class="let">б</span><span>Только ГОСТ</span></label><label class="opt"><input type="radio" name="q26" value="2"><span class="let">в</span><span>СПДС и ЕСКД</span></label><label class="opt"><input type="radio" name="q26" value="3"><span class="let">г</span><span>Стилей нет, их нужно создать</span></label></div>
+<p class="fb" hidden></p></article>
+<article class="q" data-n="27"><div class="qh"><span class="qn">27</span><span class="qt">Впишите ответ</span></div><p class="qq">Какой текстовый стиль нужно назначить выноскам вместо Standard на чертеже по ГОСТ?</p>
+<input class="wr" type="text" name="q27" autocomplete="off" placeholder="Ваш ответ">
+<p class="fb" hidden></p></article>
+</section>
+<div class="bar"><button id="check" type="button">Проверить</button><button id="reset" type="button" class="ghost">Начать заново</button><span id="score" aria-live="polite"></span></div>
+</div><script>
+const KEY={"1":{"t":"c","a":1,"show":"б) Замороженный слой не только скрыт, но и исключён из работы: его объекты нельзя выбрать и изменить"},"2":{"t":"m","a":[2,0,1],"show":"1 — В, 2 — А, 3 — Б"},"3":{"t":"c","a":1,"show":"б) Цвета из полной палитры и альбомов могут остаться цветными даже при монохромной печати"},"4":{"t":"c","a":2,"show":"в) 250"},"5":{"t":"c","a":0,"show":"а) Для коротких подписей и маркировок"},"6":{"t":"w","a":["0","0°","ноль"],"show":"0"},"7":{"t":"c","a":0,"show":"а) Редактор многострочного текста"},"8":{"t":"c","a":2,"show":"в) Нумерованный список и выравнивание выделенного фрагмента"},"9":{"t":"w","a":["коэффициент сжатия","сжатие","коэффициент сжатия текста"],"show":"Коэффициент сжатия"},"10":{"t":"c","a":1,"show":"б) Оформление"},"11":{"t":"m","a":[1,0],"show":"1 — Б, 2 — А"},"12":{"t":"w","a":["стрелкой","стрелка","стрелочкой","стрелочка"],"show":"стрелкой"},"13":{"t":"c","a":1,"show":"б) Параллельный"},"14":{"t":"m","a":[2,0,1],"show":"1 — В, 2 — А, 3 — Б"},"15":{"t":"c","a":1,"show":"б) К конечным точкам элементов"},"16":{"t":"c","a":1,"show":"б) Диаметр"},"17":{"t":"w","a":["пробел","space","пробелом"],"show":"Пробел"},"18":{"t":"w","a":["цепь","цепочка","цепь размеров"],"show":"Цепь"},"19":{"t":"c","a":1,"show":"б) СПДС"},"20":{"t":"m","a":[2,0,1],"show":"1 — В, 2 — А, 3 — Б"},"21":{"t":"c","a":1,"show":"б) Иначе на штриховке под размером появится белый прямоугольник"},"22":{"t":"c","a":0,"show":"а) Универсальную"},"23":{"t":"c","a":1,"show":"б) Точку"},"24":{"t":"w","a":["+","плюс","плюсик"],"show":"+"},"25":{"t":"m","a":[1,2,0],"show":"1 — Б, 2 — В, 3 — А"},"26":{"t":"c","a":0,"show":"а) Стандартный и аннотативный"},"27":{"t":"w","a":["ГОСТ 2.304","ГОСТ","2.304","гост 2.304"],"show":"ГОСТ 2.304"}};
+const norm=s=>s.toLowerCase().replace(/ё/g,'е').replace(/[«»"'.]/g,'').replace(/[\s+\-]+/g,'');
+document.getElementById('check').onclick=()=>{let ok=0,tot=0;
+ document.querySelectorAll('.q').forEach(q=>{const n=q.dataset.n,k=KEY[n];tot++;let good=false,empty=false;
+  if(k.t==='c'){const v=q.querySelector('input:checked');empty=!v;good=v&&+v.value===k.a;}
+  else if(k.t==='w'){const v=q.querySelector('.wr').value;empty=!v.trim();good=k.a.some(a=>norm(a)===norm(v));}
+  else{const s=[...q.querySelectorAll('select')];empty=s.some(x=>x.value==='');good=s.every((x,i)=>x.value!==''&&+x.value===k.a[i]);}
+  q.classList.remove('good','bad');q.classList.add(good?'good':'bad');if(good)ok++;
+  const fb=q.querySelector('.fb');fb.hidden=false;fb.textContent=good?'Верно.':(empty?'Нет ответа. ':'Неверно. ')+(good?'':'Правильный ответ: '+k.show);});
+ document.getElementById('score').textContent='Верно: '+ok+' из '+tot;};
+document.getElementById('reset').onclick=()=>{document.querySelectorAll('input[type=radio]').forEach(x=>x.checked=false);
+ document.querySelectorAll('.wr').forEach(x=>x.value='');document.querySelectorAll('select').forEach(x=>x.value='');
+ document.querySelectorAll('.q').forEach(q=>{q.classList.remove('good','bad');q.querySelector('.fb').hidden=true});document.getElementById('score').textContent='';window.scrollTo(0,0)};
+</script></body></html>
